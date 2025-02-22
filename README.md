@@ -13,7 +13,7 @@ Miser is a Neovim plugin that manages development tools using [Mise](https://git
 Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
-{ "carldaws/miser" }
+{ "carldaws/miser.nvim" }
 ```
 
 ## Commands
