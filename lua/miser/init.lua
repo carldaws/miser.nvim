@@ -40,12 +40,12 @@ M.install = function(_tool, _callback)
 		return
 	end
 
-	local mise_path = vim.trim(vim.fn.system("mise which " .. _tool))
-	if mise_path == "" or mise_path:match("not a mise bin") then
+	local _, _, exit_code = os.execute("mise which " .. _tool)
+	if exit_code == 0 then
+		vim.notify("Miser: " .. _tool .. " installed", vim.log.levels.INFO)
+	else
 		vim.notify("Miser: Installing " .. _tool, vim.log.levels.INFO)
 		vim.fn.jobstart(tool.install, { on_exit = callback })
-	else
-		vim.notify("Miser: " .. _tool .. " installed", vim.log.levels.INFO)
 	end
 end
 
