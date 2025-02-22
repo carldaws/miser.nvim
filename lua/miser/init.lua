@@ -40,8 +40,8 @@ M.install = function(_tool, _callback)
 		return
 	end
 
-	local _, _, exit_code = os.execute("mise which " .. _tool)
-	if exit_code == 0 then
+	local success, _, _ = os.execute("mise which " .. _tool)
+	if success then
 		vim.notify("Miser: " .. _tool .. " installed", vim.log.levels.INFO)
 	else
 		vim.notify("Miser: Installing " .. _tool, vim.log.levels.INFO)
