@@ -2,43 +2,57 @@ local M = {}
 
 M.filetypes = {}
 
+M.run = function(command, on_success, on_failure)
+	local _ = vim.fn.system(command)
+	if vim.v.shell_error == 0 then
+		on_success()
+	else
+		on_failure()
+	end
+end
+
+M.verify_or_install = function(tool, tool_data)
+	M.run(
+		tool_data.commands.verify,
+		function()
+			vim.notify("Miser: " .. tool .. " already installed", vim.log.levels.INFO)
+		end,
+		function()
+			local choice = vim.fn.input("Miser: " .. tool .. " not installed, install it? (Y/n): ")
+			if choice:lower() == "y" or choice == "" then
+				M.run(
+					tool_data.commands.install,
+					function()
+						vim.notify("Miser: " .. tool .. " installed!", vim.log.levels.INFO)
+					end,
+					function()
+						vim.notify("Miser: Error installing " .. tool, vim.log.levels.ERROR)
+					end
+				)
+			else
+				vim.notify("Miser: Installation of " .. tool .. " skipped", vim.log.levels.INFO)
+			end
+		end
+	)
+end
+
 M.install_filetype_tools = function(filetype)
 	local ft_data = M.filetypes[filetype]
 	if not ft_data then
 		return
 	end
 
-	for tool_name, tool in pairs(ft_data.tools) do
-		for _, requirement in ipairs(tool.requires) do
+	for tool, tool_data in pairs(ft_data.tools) do
+		for _, requirement in ipairs(tool_data.requires) do
 			local module_loaded, requirement_data = pcall(require, "miser.tools." .. requirement)
 			if module_loaded then
-				local success = os.execute(requirement_data.commands.verify)
-				if success ~= 0 then
-					local choice = vim.fn.input(requirement .. " not installed, install it? (Y/n): ")
-					if choice:lower() == "y" or choice == "" then
-						vim.notify("Installing " .. requirement .. "...", vim.log.levels.INFO)
-						os.execute(requirement_data.commands.install)
-						vim.notify(requirement .. " installed!")
-					else
-						vim.notify("Installation skipped", vim.log.levels.INFO)
-						return
-					end
-				end
+				M.verify_or_install(requirement, requirement_data)
+			else
+				vim.notify("Miser: No such requirement " .. requirement .. " found", vim.log.levels.ERROR)
 			end
 		end
 
-		local success = os.execute(tool.commands.verify)
-		if success ~= 0 then
-			local choice = vim.fn.input(tool_name .. " not installed, install it? (Y/n): ")
-			if choice:lower() == "y" or choice == "" then
-				vim.notify("Installing " .. tool_name .. "...", vim.log.levels.INFO)
-				os.execute(tool.commands.install)
-				vim.notify(tool_name .. " installed!")
-			else
-				vim.notify("Installation skipped", vim.log.levels.INFO)
-				return
-			end
-		end
+		M.verify_or_install(tool, tool_data)
 	end
 end
 
