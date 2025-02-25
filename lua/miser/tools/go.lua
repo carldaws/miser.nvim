@@ -1,5 +1,8 @@
 return {
-	go = {
-		["gopls"] = { install = "go install golang.org/x/tools/gopls@latest" }
+	requires = {},
+	filetypes = {},
+	commands = {
+		install = "mise use go",
+		verify = "mise which go"
 	}
 }

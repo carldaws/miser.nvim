@@ -1,6 +1,8 @@
 return {
-	ruby = {
-		["ruby-lsp"] = { install = "gem install ruby-lsp" },
-		["rubocop"] = { install = "gem install rubocop" },
+	requires = {},
+	filetypes = {},
+	commands = {
+		install = "mise use ruby",
+		verify = "mise which ruby"
 	}
 }
