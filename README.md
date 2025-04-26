@@ -79,7 +79,7 @@ return {
 
 Adding a new tool is simple:
 
-1. Create a new file `lua/miser/tools/<my-new-tool>/lua`
+1. Create a new file `lua/miser/tools/<my-new-tool>.lua`
 2. Define the required runtime(s), filetypes and commands
 
 That's it!
