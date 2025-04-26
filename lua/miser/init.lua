@@ -1,6 +1,7 @@
 local M = {}
 
 M.filetypes = {}
+M.installed = {}
 
 M.run = function(command, on_success, on_failure)
 	local _ = vim.fn.system(command)
@@ -12,10 +13,15 @@ M.run = function(command, on_success, on_failure)
 end
 
 M.verify_or_install = function(tool, tool_data)
+	if M.installed[tool] then
+		return
+	end
+
 	M.run(
 		tool_data.commands.verify,
 		function()
 			vim.notify("Miser: " .. tool .. " already installed", vim.log.levels.INFO)
+			M.installed[tool] = true
 		end,
 		function()
 			local choice = vim.fn.input("Miser: " .. tool .. " not installed, install it? (Y/n): ")
@@ -24,6 +30,7 @@ M.verify_or_install = function(tool, tool_data)
 					tool_data.commands.install,
 					function()
 						vim.notify("Miser: " .. tool .. " installed!", vim.log.levels.INFO)
+						M.installed[tool] = true
 					end,
 					function()
 						vim.notify("Miser: Error installing " .. tool, vim.log.levels.ERROR)
