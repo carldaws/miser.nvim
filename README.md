@@ -1,52 +1,91 @@
-# Miser
+# Miser.nvim
 
-Miser is a Neovim plugin that manages development tools using [Mise](https://github.com/jdx/mise). It ensures that required tools are installed and available, automatically installing them when needed.
+**Miser** is a minimalist tool manager for Neovim users who prefer [mise](https://github.com/jdx/mise) over system-wide installs.
+
+Miser ensures that project-required tools like formatters, linters and language servers are available in the project's environment.
+
+If tools are missing, Miser automatically triggers their install process.
 
 ## Features
 
-- **Auto-installation**: Automatically installs tools required by Neovim configurations.
-- **Lazy-loading**: Installs tools on demand when an LSP server is started.
-- **Manual Installation**: Install tools manually via the `:MiserInstall` command.
+- Automatic tool and runtime installation for each project
+- Seamless integration with mise
+- Minimal setup: just list the tools you need
+- Easily add support for new tools and runtimes / environments
+- Works with any language server, formatter, linter or debugger
+
+## How it works
+
+1. Miser listens for `FileType` events
+2. When you open a file, Miser checks if the necessary tools and runtimes are installed via mise
+3. If a runtime or tool is missing, Miser installs it
+4. Once installed, the tool and runtime is ready to use
 
 ## Installation
 
-Using [lazy.nvim](https://github.com/folke/lazy.nvim):
+Using lazy.nvim:
 
 ```lua
-{ "carldaws/miser.nvim" }
+{
+    "carldaws/miser.nvim",
+    config = function()
+        require("miser").setup({
+            tools = { "gopls", "rubocop", "prettier", "black", "zls" }
+        })
+    end
+}
 ```
-
-## Commands
-
-- `:MiserInstall <tool>` – Installs the specified tool.
 
 ## Configuration
 
-Miser can be configured via `require("miser").setup({})` with the following options:
+Just pass a table of `tools` to the setup function:
 
 ```lua
 require("miser").setup({
-    tools = { "gopls", "rust-analyzer" } -- These will be installed when needed
-    ensure_installed = { "lua-language-server", "rubocop" }, -- List of tools to ensure are installed
+    tools = { "gopls", "rubocop", "prettier", "black", "zls" }
 })
 ```
 
-## How It Works
+Tools are defined in `lua/miser/tools/<tool-name>.lua` and consist of:
 
-1. On startup, Miser installs all tools listed in `ensure_installed`.
-2. When Neovim starts an LSP client, Miser checks if the required tool is installed and installs it if necessary.
-3. If Mise or the required dependencies are missing, Miser provides helpful error messages.
+- Which filetype it applies to
+- Which runtime(s) or environment(s) it requires (ruby, rust, go, zig, node, etc.)
+- A command to verify the tool is installed
+- A command to install the tool using mise
 
-## Dependencies
+## Example tool definition
 
-- [Mise](https://github.com/jdx/mise) – Required for managing tools.
-- Neovim 0.8+ (for `vim.lsp.start_client` API usage).
+Here's what a typical Miser tool definition looks like:
 
-## License
+```lua
+return {
+    requires = { "ruby" },
+    filetypes = { "ruby" },
+    commands = {
+        install = "gem install rubocop",
+        verify = "mise which rubocop",
+    }
+}
+```
 
-MIT License
+- `requires` - runtimes which must be available before installing the tool
+- `filetypes` - Neovim filetypes this tool should be active for
+- `commands.install` - A command used to install the tool if it's missing
+- `commands.verify` - A command used to check if the tool is installed
 
-## Contributing
+## Contributing tools
 
-PRs are welcome! Feel free to contribute to Miser and help improve its functionality.
+**If you have a tool you think others would benefit from, please submit a PR**
 
+Adding a new tool is simple:
+
+1. Create a new file `lua/miser/tools/<my-new-tool>/lua`
+2. Define the required runtime(s), filetypes and commands
+
+That's it!
+
+## Next up
+
+- Enable auto-install (no prompting) by default
+- Add tool type (LSP, linter, debugger etc.) to tool definitions to allow for smart post-install behaviour such as reattaching LSPs
+- Allow multiple install commands to support different environments for the same tool (Bun vs Node, for example)
