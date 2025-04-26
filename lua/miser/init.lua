@@ -20,7 +20,6 @@ M.verify_or_install = function(tool, tool_data)
 	M.run(
 		tool_data.commands.verify,
 		function()
-			vim.notify("Miser: " .. tool .. " already installed", vim.log.levels.INFO)
 			M.installed[tool] = true
 		end,
 		function()
