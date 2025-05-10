@@ -86,6 +86,7 @@ That's it!
 
 ## Next up
 
+- Add the option to globally install tools when missing
 - Enable auto-install (no prompting) by default
 - Add tool type (LSP, linter, debugger etc.) to tool definitions to allow for smart post-install behaviour such as reattaching LSPs
 - Allow multiple install commands to support different environments for the same tool (Bun vs Node, for example)
