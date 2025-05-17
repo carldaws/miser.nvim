@@ -86,6 +86,7 @@ That's it!
 
 ## Next up
 
+- Adjust Miser syntax to make it a drop-in replacement for Mason
 - Add the option to globally install tools when missing
 - Enable auto-install (no prompting) by default
 - Add tool type (LSP, linter, debugger etc.) to tool definitions to allow for smart post-install behaviour such as reattaching LSPs
