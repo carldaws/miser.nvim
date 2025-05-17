@@ -1,8 +1,8 @@
 return {
-	requires = {},
+	requires = { "rust" },
 	filetypes = { "toml" },
 	commands = {
-		install = "mise use taplo",
+		install = "cargo install --features lsp --locked taplo-cli",
 		verify = "mise which taplo",
 	}
 }
