@@ -56,6 +56,7 @@ require("miser").setup({
   auto_format = true,    -- format on save via registry (default: true)
   auto_lsp = true,       -- auto-configure LSPs from mise tools (default: true)
   registry = {},         -- override or extend the built-in registry (see below)
+  task_runner = nil,     -- callback receiving a command string (default: terminal split)
 })
 ```
 
@@ -91,7 +92,7 @@ No LSP config blocks. No formatter autocmds. Just declare your tools.
 |---------|-------------|
 | `:Miser status` | Open a status panel showing tools, LSPs, and formatters |
 | `:Miser install` | Run `mise install` and re-activate LSPs and formatters |
-| `:Miser run <task>` | Run a mise task in a terminal split |
+| `:Miser run <task>` | Run a mise task via your configured `task_runner` |
 
 The status panel supports:
 - `q` / `<Esc>` to close
@@ -141,16 +142,25 @@ end)
 Miser tasks pair well with [surface.nvim](https://github.com/carldaws/surface.nvim) for persistent, toggleable terminal windows. Instead of throwaway splits, tasks open in surface windows that you can dismiss and resurface later — great for long-running tasks like dev servers:
 
 ```lua
+require("miser").setup({
+  task_runner = function(cmd)
+    require("surface").open(cmd, "bottom")
+  end,
+})
+```
+
+Now both `:Miser run dev` and your picker keymap route through surface:
+
+```lua
 vim.keymap.set("n", "<leader>mt", function()
   require("miser.tasks").list(function(tasks)
-    -- use your preferred picker here
     vim.ui.select(tasks, {
       prompt = "Mise Tasks:",
       format_item = function(t) return t.name end,
     }, function(choice)
       if choice then
         vim.schedule(function()
-          require("surface").open("mise run " .. choice.name, "bottom")
+          require("miser.tasks").run(choice.name)
         end)
       end
     end)

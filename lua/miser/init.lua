@@ -5,6 +5,7 @@ M.defaults = {
   auto_format = true,
   auto_lsp = true,
   registry = {},
+  task_runner = nil,
 }
 
 M._state = {
@@ -198,6 +199,10 @@ function M.setup(opts)
   local registry = require("miser.registry")
   if not vim.tbl_isempty(opts.registry) then
     registry.merge(opts.registry)
+  end
+
+  if opts.task_runner then
+    require("miser.tasks")._task_runner = opts.task_runner
   end
 
   M.activate(opts)
