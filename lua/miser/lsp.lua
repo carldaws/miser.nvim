@@ -6,6 +6,14 @@ function M.setup(tools)
   local miser_root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h:h:h")
   local lsp_dir = miser_root .. "/deps/nvim-lspconfig/lsp"
 
+  if vim.fn.isdirectory(lsp_dir) == 0 then
+    vim.fn.system({ "git", "-C", miser_root, "submodule", "update", "--init" })
+    if vim.fn.isdirectory(lsp_dir) == 0 then
+      vim.notify("miser: failed to init lspconfig submodule", vim.log.levels.WARN)
+      return {}
+    end
+  end
+
   local enabled = {}
 
   for tool_name, _ in pairs(tools) do

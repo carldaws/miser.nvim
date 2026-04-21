@@ -38,12 +38,7 @@ With lazy.nvim:
 }
 ```
 
-**Important:** miser bundles nvim-lspconfig as a git submodule. If your plugin manager doesn't fetch submodules automatically, run:
-
-```sh
-cd <plugin-install-path>/miser.nvim
-git submodule update --init
-```
+Miser bundles nvim-lspconfig as a git submodule. If your plugin manager doesn't fetch submodules automatically, miser will init it on first run.
 
 ## Setup
 
