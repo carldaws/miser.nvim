@@ -67,12 +67,21 @@ Given a project `mise.toml`:
 [tools]
 "npm:typescript-language-server" = "latest"
 biome = "1.9.4"
+
+[tasks.dev]
+description = "Start the dev server"
+run = "npm run dev"
+
+[tasks.test]
+description = "Run the test suite"
+run = "npm test"
 ```
 
 Miser will:
 - Enable the `ts_ls` LSP for JavaScript and TypeScript files
 - Format JS/TS/JSON/CSS files with `biome format --write` on save
 - Run `mise install` in the background to ensure both tools are available
+- Make `dev` and `test` available via `miser.tasks.list()` and `:Miser run`
 
 No LSP config blocks. No formatter autocmds. Just declare your tools.
 
@@ -126,6 +135,30 @@ vim.keymap.set("n", "<leader>mt", function()
   end)
 end)
 ```
+
+### Pairing with surface.nvim
+
+Miser tasks pair well with [surface.nvim](https://github.com/carldaws/surface.nvim) for persistent, toggleable terminal windows. Instead of throwaway splits, tasks open in surface windows that you can dismiss and resurface later — great for long-running tasks like dev servers:
+
+```lua
+vim.keymap.set("n", "<leader>mt", function()
+  require("miser.tasks").list(function(tasks)
+    -- use your preferred picker here
+    vim.ui.select(tasks, {
+      prompt = "Mise Tasks:",
+      format_item = function(t) return t.name end,
+    }, function(choice)
+      if choice then
+        vim.schedule(function()
+          require("surface").open("mise run " .. choice.name, "bottom")
+        end)
+      end
+    end)
+  end)
+end)
+```
+
+Pick "dev", the server starts in a surface window. Dismiss it, keep coding. Resurface it later with the same keymap — your server output is still there.
 
 ## The Registry
 
