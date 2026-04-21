@@ -1,93 +1,217 @@
-# Miser.nvim
+# miser.nvim
 
-**Miser** is a minimalist tool manager for Neovim users who prefer [mise](https://github.com/jdx/mise) over system-wide installs.
+**miser** bridges [mise](https://github.com/jdx/mise) and Neovim. Declare your tools in `mise.toml` and miser handles the rest: LSP servers start, formatters run on save, and mise tasks are a keypress away.
 
-Miser ensures that project-required tools like formatters, linters and language servers are available in the project's environment.
-
-If tools are missing, Miser automatically triggers their install process.
-
-## Features
-
-- Automatic tool and runtime installation for each project
-- Seamless integration with mise
-- Minimal setup: just list the tools you need
-- Easily add support for new tools and runtimes / environments
-- Works with any language server, formatter, linter or debugger
+No more mason, no more global installs drifting out of sync, no more hardcoding formatters in your Neovim config. The project decides which tools it needs. Miser makes Neovim respect that.
 
 ## How it works
 
-1. Miser listens for `FileType` events
-2. When you open a file, Miser checks if the necessary tools and runtimes are installed via mise
-3. If a runtime or tool is missing, Miser installs it
-4. Once installed, the tool and runtime is ready to use
+1. On startup, miser reads your project's mise tools via `mise ls --current`
+2. Each tool is looked up in a **registry** that maps mise tool names to LSP server names and formatter commands
+3. LSP configs are loaded from the bundled [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig) and enabled via `vim.lsp.config` / `vim.lsp.enable`
+4. Formatters run on save via `BufWritePost` — the project's `mise.toml` determines which formatter, not your Neovim config
+5. `mise install` runs in the background to ensure tools are up to date
+
+## Requirements
+
+- Neovim >= 0.11
+- [mise](https://mise.jdx.dev/) installed and on your PATH
 
 ## Installation
 
-Using lazy.nvim:
+With `vim.pack.add` (Neovim 0.11+):
 
 ```lua
-{
-    "carldaws/miser.nvim",
-    config = function()
-        require("miser").setup({
-            tools = { "gopls", "rubocop", "prettier", "black", "zls" }
-        })
-    end
-}
-```
-
-## Configuration
-
-Just pass a table of `tools` to the setup function:
-
-```lua
-require("miser").setup({
-    tools = { "gopls", "rubocop", "prettier", "black", "zls" }
+vim.pack.add({
+  { src = "https://github.com/carldaws/miser.nvim" },
 })
 ```
 
-Tools are defined in `lua/miser/tools/<tool-name>.lua` and consist of:
-
-- Which filetype it applies to
-- Which runtime(s) or environment(s) it requires (ruby, rust, go, zig, node, etc.)
-- A command to verify the tool is installed
-- A command to install the tool using mise
-
-## Example tool definition
-
-Here's what a typical Miser tool definition looks like:
+With lazy.nvim:
 
 ```lua
-return {
-    requires = { "ruby" },
-    filetypes = { "ruby" },
-    commands = {
-        install = "gem install rubocop",
-        verify = "mise which rubocop",
-    }
+{
+  "carldaws/miser.nvim",
+  config = function()
+    require("miser").setup()
+  end,
 }
 ```
 
-- `requires` - runtimes which must be available before installing the tool
-- `filetypes` - Neovim filetypes this tool should be active for
-- `commands.install` - A command used to install the tool if it's missing
-- `commands.verify` - A command used to check if the tool is installed
+**Important:** miser bundles nvim-lspconfig as a git submodule. If your plugin manager doesn't fetch submodules automatically, run:
 
-## Contributing tools
+```sh
+cd <plugin-install-path>/miser.nvim
+git submodule update --init
+```
 
-**If you have a tool you think others would benefit from, please submit a PR**
+## Setup
 
-Adding a new tool is simple:
+```lua
+require("miser").setup()
+```
 
-1. Create a new file `lua/miser/tools/<my-new-tool>.lua`
-2. Define the required runtime(s), filetypes and commands
+That's it. If your project has a `mise.toml` with tools declared, miser will configure LSPs and formatters automatically.
 
-That's it!
+### Options
 
-## Next up
+```lua
+require("miser").setup({
+  auto_install = true,   -- run `mise install` on startup (default: true)
+  auto_format = true,    -- format on save via registry (default: true)
+  auto_lsp = true,       -- auto-configure LSPs from mise tools (default: true)
+  registry = {},         -- override or extend the built-in registry (see below)
+})
+```
 
-- Adjust Miser syntax to make it a drop-in replacement for Mason
-- Add the option to globally install tools when missing
-- Enable auto-install (no prompting) by default
-- Add tool type (LSP, linter, debugger etc.) to tool definitions to allow for smart post-install behaviour such as reattaching LSPs
-- Allow multiple install commands to support different environments for the same tool (Bun vs Node, for example)
+## Example
+
+Given a project `mise.toml`:
+
+```toml
+[tools]
+"npm:typescript-language-server" = "latest"
+biome = "1.9.4"
+```
+
+Miser will:
+- Enable the `ts_ls` LSP for JavaScript and TypeScript files
+- Format JS/TS/JSON/CSS files with `biome format --write` on save
+- Run `mise install` in the background to ensure both tools are available
+
+No LSP config blocks. No formatter autocmds. Just declare your tools.
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `:Miser status` | Open a status panel showing tools, LSPs, and formatters |
+| `:Miser install` | Run `mise install` and re-activate LSPs and formatters |
+| `:Miser run <task>` | Run a mise task in a terminal split |
+
+The status panel supports:
+- `q` / `<Esc>` to close
+- `i` to run `mise install` and refresh
+
+## Health check
+
+Run `:checkhealth miser` to verify your setup — checks for mise, the lspconfig submodule, project tools, and running LSP clients.
+
+## Tasks
+
+Miser exposes mise tasks via a simple API — wire it up to any picker:
+
+```lua
+-- With mini.pick
+vim.keymap.set("n", "<leader>mt", function()
+  require("miser.tasks").list(function(tasks)
+    require("mini.pick").start({
+      source = {
+        name = "Mise Tasks",
+        items = vim.tbl_map(function(t) return t.name end, tasks),
+        choose = function(chosen)
+          if chosen then require("miser.tasks").run(chosen) end
+        end,
+      },
+    })
+  end)
+end)
+```
+
+```lua
+-- With vim.ui.select
+vim.keymap.set("n", "<leader>mt", function()
+  require("miser.tasks").list(function(tasks)
+    vim.ui.select(tasks, {
+      prompt = "Mise Tasks:",
+      format_item = function(t) return t.name end,
+    }, function(choice)
+      if choice then require("miser.tasks").run(choice.name) end
+    end)
+  end)
+end)
+```
+
+## The Registry
+
+The registry maps mise tool names to LSP server names and formatter commands.
+
+**LSP entries** are just name mappings — miser loads the full config from the bundled nvim-lspconfig:
+
+```lua
+["typescript-language-server"] = { lsp = "ts_ls" },
+["gopls"] = { lsp = "gopls" },
+```
+
+**Formatter entries** define the command and which filetypes it handles:
+
+```lua
+["biome"] = {
+  formatter = {
+    filetypes = { "javascript", "typescript", "json", "css" },
+    cmd = { "biome", "format", "--write" },
+  },
+},
+```
+
+Tools can have both:
+
+```lua
+["rubocop"] = {
+  lsp = "rubocop",
+  formatter = {
+    filetypes = { "ruby" },
+    cmd = { "rubocop", "-A", "--stderr" },
+  },
+},
+```
+
+Mise backend prefixes are stripped automatically — `npm:typescript-language-server` matches the registry entry for `typescript-language-server`.
+
+### Built-in entries
+
+| Tool | LSP | Formatter |
+|------|-----|-----------|
+| lua-language-server | lua_ls | |
+| ruby-lsp | ruby_lsp | |
+| rubocop | rubocop | rubocop -A |
+| typescript-language-server | ts_ls | |
+| astro-language-server | astro | |
+| gopls | gopls | |
+| ruff | ruff | ruff format |
+| biome | | biome format --write |
+| prettier | | prettier --write |
+| stylua | | stylua |
+| gofumpt | | gofumpt -w |
+| black | | black |
+| shfmt | | shfmt -w |
+
+### Extending the registry
+
+```lua
+require("miser").setup({
+  registry = {
+    ["my-lsp"] = { lsp = "my_ls" },
+    ["my-formatter"] = {
+      formatter = {
+        filetypes = { "custom" },
+        cmd = { "my-fmt", "--write" },
+      },
+    },
+  },
+})
+```
+
+## Contributing
+
+The registry is the main contribution surface. To add support for a new tool:
+
+1. Add an entry to `lua/miser/registry.lua`
+2. For LSPs, ensure a matching config exists in nvim-lspconfig (most servers are already covered)
+3. For formatters, include `filetypes` and `cmd`
+4. Test with a `mise.toml` that declares the tool
+5. Open a PR
+
+## License
+
+MIT
