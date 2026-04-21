@@ -226,6 +226,10 @@ function M.setup(opts)
         return
       end
       require("miser.tasks").run(task_name, vim.list_slice(args, 3))
+    elseif subcmd == "trust" then
+      require("miser.trust").run(function()
+        M.activate(M._opts)
+      end)
     elseif subcmd == "install" then
       require("miser.install").run(function()
         M.activate(M._opts)
@@ -233,14 +237,14 @@ function M.setup(opts)
     elseif subcmd == "status" then
       M.show_status()
     else
-      vim.notify("miser: unknown command '" .. (subcmd or "") .. "'\nUsage: Miser status | run <task> | install", vim.log.levels.WARN)
+      vim.notify("miser: unknown command '" .. (subcmd or "") .. "'\nUsage: Miser status | run <task> | install | trust", vim.log.levels.WARN)
     end
   end, {
     nargs = "+",
     complete = function(_, line)
       local parts = vim.split(line, "%s+")
       if #parts <= 2 then
-        return { "status", "run", "install" }
+        return { "install", "run", "status", "trust" }
       end
       return {}
     end,
