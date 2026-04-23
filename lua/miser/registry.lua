@@ -11,9 +11,10 @@ M.entries = {
   -- LSP + formatter
   ["rubocop"] = {
     lsp = "rubocop",
+    lsp_cmd = { "bundle", "exec", "rubocop", "--lsp" },
     formatter = {
       filetypes = { "ruby" },
-      cmd = { "rubocop", "-A", "--stderr" },
+      cmd = { "bundle", "exec", "rubocop", "-A", "--stderr" },
     },
   },
   ["ruff"] = {

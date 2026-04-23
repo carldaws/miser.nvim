@@ -21,7 +21,11 @@ function M.setup(tools)
     if entry and entry.lsp then
       local config_file = lsp_dir .. "/" .. entry.lsp .. ".lua"
       if vim.fn.filereadable(config_file) == 1 then
-        vim.lsp.config(entry.lsp, dofile(config_file))
+        local config = dofile(config_file)
+        if entry.lsp_cmd then
+          config.cmd = entry.lsp_cmd
+        end
+        vim.lsp.config(entry.lsp, config)
         vim.lsp.enable(entry.lsp)
         table.insert(enabled, entry.lsp)
       end
