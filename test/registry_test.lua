@@ -41,10 +41,10 @@ assert_nil(entry.lsp, "prettier has no lsp")
 assert_not_nil(entry.formatter, "prettier has formatter")
 
 -- LSP + formatter entry
-entry = registry.get("rubocop")
-assert_not_nil(entry, "rubocop should exist")
-assert_eq("rubocop", entry.lsp, "rubocop lsp name")
-assert_not_nil(entry.formatter, "rubocop has formatter")
+entry = registry.get("ruff")
+assert_not_nil(entry, "ruff should exist")
+assert_eq("ruff", entry.lsp, "ruff lsp name")
+assert_not_nil(entry.formatter, "ruff has formatter")
 
 -- Backend prefix stripping
 entry = registry.get("npm:typescript-language-server")

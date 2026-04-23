@@ -3,20 +3,11 @@ local M = {}
 M.entries = {
   -- LSP-only (configs provided by nvim-lspconfig)
   ["lua-language-server"] = { lsp = "lua_ls" },
-  ["ruby-lsp"] = { lsp = "ruby_lsp" },
   ["typescript-language-server"] = { lsp = "ts_ls" },
   ["astro-language-server"] = { lsp = "astro" },
   ["gopls"] = { lsp = "gopls" },
 
   -- LSP + formatter
-  ["rubocop"] = {
-    lsp = "rubocop",
-    lsp_cmd = { "bundle", "exec", "rubocop", "--lsp" },
-    formatter = {
-      filetypes = { "ruby" },
-      cmd = { "bundle", "exec", "rubocop", "-A", "--stderr" },
-    },
-  },
   ["ruff"] = {
     lsp = "ruff",
     formatter = {
