@@ -59,23 +59,16 @@ assert_not_nil(formatters["javascript"], "javascript is claimed")
 assert_not_nil(formatters["html"], "prettier claims html")
 assert_not_nil(formatters["yaml"], "prettier claims yaml")
 
--- Bundled gems get bundle exec prepended
+-- Rubocop claims ruby filetype
 format._formatters = {}
-local tools_bundled = {
+local tools_rubocop = {
   ["rubocop"] = {},
 }
-local bundled_gems = { ["rubocop"] = true }
-formatters = format.setup(tools_bundled, bundled_gems)
+formatters = format.setup(tools_rubocop)
 assert_not_nil(formatters["ruby"], "rubocop claims ruby")
-assert_eq("bundle", formatters["ruby"][1], "bundled rubocop cmd starts with bundle")
-assert_eq("exec", formatters["ruby"][2], "bundled rubocop cmd has exec")
-assert_eq("rubocop", formatters["ruby"][3], "bundled rubocop cmd has rubocop")
-
--- Non-bundled tools use their cmd directly
-format._formatters = {}
-formatters = format.setup(tools_bundled, {})
-assert_not_nil(formatters["ruby"], "rubocop still claims ruby without bundle")
-assert_eq("rubocop", formatters["ruby"][1], "non-bundled rubocop cmd starts with rubocop")
+assert_eq("rubocop", formatters["ruby"][1], "rubocop cmd name")
+assert_eq("-A", formatters["ruby"][2], "rubocop cmd arg1")
+assert_eq("--stderr", formatters["ruby"][3], "rubocop cmd arg2")
 
 if failures == 0 then
   print("OK: all format tests passed")
