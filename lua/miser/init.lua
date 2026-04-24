@@ -28,17 +28,45 @@ function M.activate(opts)
   local json = vim.fn.system({ "mise", "ls", "--current", "--json" })
   local ok, tools = pcall(vim.json.decode, json)
   if not ok or not tools then
-    return
+    tools = {}
   end
 
   M._state.tools = tools
 
   if opts.auto_lsp then
-    M._state.enabled_lsps = require("miser.lsp").setup(tools)
+    M._state.enabled_lsps = require("miser.lsp").setup(tools, {})
   end
   if opts.auto_format then
-    M._state.formatters = require("miser.format").setup(tools)
+    M._state.formatters = require("miser.format").setup(tools, {})
   end
+
+  require("miser.bundled").list(function(gems)
+    if vim.tbl_isempty(gems) then
+      return
+    end
+
+    M._state.bundled_gems = gems
+
+    local registry = require("miser.registry")
+    local has_new = false
+    for gem_name, _ in pairs(gems) do
+      if not tools[gem_name] and registry.get(gem_name) then
+        tools[gem_name] = {}
+        has_new = true
+      end
+    end
+
+    M._state.tools = tools
+
+    if has_new or not vim.tbl_isempty(gems) then
+      if opts.auto_lsp then
+        M._state.enabled_lsps = require("miser.lsp").setup(tools, gems)
+      end
+      if opts.auto_format then
+        M._state.formatters = require("miser.format").setup(tools, gems)
+      end
+    end
+  end)
 end
 
 function M.show_status()

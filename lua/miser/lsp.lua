@@ -2,7 +2,7 @@ local registry = require("miser.registry")
 
 local M = {}
 
-function M.setup(tools)
+function M.setup(tools, bundled_gems)
   local miser_root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h:h:h")
   local lsp_dir = miser_root .. "/deps/nvim-lspconfig/lsp"
 
@@ -14,6 +14,7 @@ function M.setup(tools)
     end
   end
 
+  bundled_gems = bundled_gems or {}
   local enabled = {}
 
   for tool_name, _ in pairs(tools) do
@@ -22,7 +23,13 @@ function M.setup(tools)
       local config_file = lsp_dir .. "/" .. entry.lsp .. ".lua"
       if vim.fn.filereadable(config_file) == 1 then
         local config = dofile(config_file)
-        if entry.lsp_cmd then
+        if bundled_gems[tool_name] then
+          if type(config.cmd) == "function" then
+            config.cmd = { "bundle", "exec", tool_name }
+          else
+            config.cmd = vim.list_extend({ "bundle", "exec" }, config.cmd)
+          end
+        elseif entry.lsp_cmd then
           config.cmd = entry.lsp_cmd
         end
         vim.lsp.config(entry.lsp, config)

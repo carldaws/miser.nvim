@@ -24,7 +24,17 @@ local function assert_not_nil(actual, msg)
 end
 
 -- Direct lookup
-local entry = registry.get("gopls")
+local entry = registry.get("ruby-lsp")
+assert_not_nil(entry, "ruby-lsp should exist")
+assert_eq("ruby_lsp", entry.lsp, "ruby-lsp lsp name")
+assert_nil(entry.formatter, "ruby-lsp has no formatter")
+
+entry = registry.get("rubocop")
+assert_not_nil(entry, "rubocop should exist")
+assert_eq("rubocop", entry.lsp, "rubocop lsp name")
+assert_not_nil(entry.formatter, "rubocop has formatter")
+
+entry = registry.get("gopls")
 assert_not_nil(entry, "gopls should exist")
 assert_eq("gopls", entry.lsp, "gopls lsp name")
 

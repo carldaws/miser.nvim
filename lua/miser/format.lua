@@ -5,18 +5,23 @@ local M = {}
 -- Map of filetype -> formatter cmd, built once from mise tools + registry
 M._formatters = {}
 
-function M.setup(tools)
+function M.setup(tools, bundled_gems)
   M._formatters = {}
+  bundled_gems = bundled_gems or {}
 
   local claimed = {}
 
   for tool_name, _ in pairs(tools) do
     local entry = registry.get(tool_name)
     if entry and entry.formatter then
+      local cmd = entry.formatter.cmd
+      if bundled_gems[tool_name] then
+        cmd = vim.list_extend({ "bundle", "exec" }, cmd)
+      end
       for _, ft in ipairs(entry.formatter.filetypes) do
         if not claimed[ft] then
           claimed[ft] = true
-          M._formatters[ft] = entry.formatter.cmd
+          M._formatters[ft] = cmd
         end
       end
     end
