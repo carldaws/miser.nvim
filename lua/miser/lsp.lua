@@ -15,11 +15,7 @@ function M.setup(tools)
     end
   end
 
-  -- Add lspconfig's lua/ to package path so configs can require('lspconfig.util')
-  local lua_dir = lspconfig_root .. "/lua"
-  if not package.path:find(lua_dir, 1, true) then
-    package.path = lua_dir .. "/?.lua;" .. lua_dir .. "/?/init.lua;" .. package.path
-  end
+  vim.opt.rtp:append(lspconfig_root)
 
   local enabled = {}
 
