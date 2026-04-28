@@ -23,26 +23,41 @@ local function assert_not_nil(actual, msg)
   end
 end
 
--- Direct lookup
-local entry = registry.get("ruby-lsp")
-assert_not_nil(entry, "ruby-lsp should exist")
+-- Exact mise tool names (no prefix stripping)
+local entry = registry.get("gem:ruby-lsp")
+assert_not_nil(entry, "gem:ruby-lsp should exist")
 assert_eq("ruby_lsp", entry.lsp, "ruby-lsp lsp name")
 assert_nil(entry.formatter, "ruby-lsp has no formatter")
 
-entry = registry.get("rubocop")
-assert_not_nil(entry, "rubocop should exist")
+entry = registry.get("gem:rubocop")
+assert_not_nil(entry, "gem:rubocop should exist")
 assert_eq("rubocop", entry.lsp, "rubocop lsp name")
 assert_not_nil(entry.formatter, "rubocop has formatter")
 
-entry = registry.get("gopls")
-assert_not_nil(entry, "gopls should exist")
+entry = registry.get("go:golang.org/x/tools/gopls")
+assert_not_nil(entry, "go:golang.org/x/tools/gopls should exist")
 assert_eq("gopls", entry.lsp, "gopls lsp name")
 
 -- LSP-only entry has no formatter
-entry = registry.get("typescript-language-server")
-assert_not_nil(entry, "typescript-language-server should exist")
+entry = registry.get("npm:typescript-language-server")
+assert_not_nil(entry, "npm:typescript-language-server should exist")
 assert_eq("ts_ls", entry.lsp, "ts_ls lsp name")
 assert_nil(entry.formatter, "typescript-language-server has no formatter")
+
+-- Scoped npm package
+entry = registry.get("npm:@astrojs/language-server")
+assert_not_nil(entry, "npm:@astrojs/language-server should exist")
+assert_eq("astro", entry.lsp, "astro lsp name")
+
+-- Mise registry short names (no prefix)
+entry = registry.get("lua-language-server")
+assert_not_nil(entry, "lua-language-server should exist")
+assert_eq("lua_ls", entry.lsp, "lua_ls lsp name")
+
+entry = registry.get("ruff")
+assert_not_nil(entry, "ruff should exist")
+assert_eq("ruff", entry.lsp, "ruff lsp name")
+assert_not_nil(entry.formatter, "ruff has formatter")
 
 -- Formatter-only entry has no lsp
 entry = registry.get("prettier")
@@ -50,48 +65,24 @@ assert_not_nil(entry, "prettier should exist")
 assert_nil(entry.lsp, "prettier has no lsp")
 assert_not_nil(entry.formatter, "prettier has formatter")
 
--- LSP + formatter entry
-entry = registry.get("ruff")
-assert_not_nil(entry, "ruff should exist")
-assert_eq("ruff", entry.lsp, "ruff lsp name")
-assert_not_nil(entry.formatter, "ruff has formatter")
-
--- Backend prefix stripping
-entry = registry.get("npm:typescript-language-server")
-assert_not_nil(entry, "npm: prefix should be stripped")
-assert_eq("ts_ls", entry.lsp, "npm: prefix lookup")
-
-entry = registry.get("pipx:ruff")
-assert_not_nil(entry, "pipx: prefix should be stripped")
-assert_eq("ruff", entry.lsp, "pipx: prefix lookup")
-
--- Go module path: match last segment
-entry = registry.get("go:golang.org/x/tools/gopls")
-assert_not_nil(entry, "go module path should match gopls")
-assert_eq("gopls", entry.lsp, "go module path lsp name")
-
--- No prefix doesn't double-lookup
-entry = registry.get("gopls")
-assert_not_nil(entry, "no prefix still works")
-
 -- Unknown tool returns nil
 entry = registry.get("nonexistent-tool")
 assert_nil(entry, "unknown tool returns nil")
 
--- Unknown tool with prefix returns nil
-entry = registry.get("npm:nonexistent-tool")
-assert_nil(entry, "unknown prefixed tool returns nil")
+-- Bare name doesn't match when full mise key is required
+entry = registry.get("rubocop")
+assert_nil(entry, "bare rubocop should not match (need gem:rubocop)")
 
 -- Merge: override existing
 registry.merge({
-  ["gopls"] = {
+  ["go:golang.org/x/tools/gopls"] = {
     formatter = {
       filetypes = { "go" },
       cmd = { "gofmt", "-w" },
     },
   },
 })
-entry = registry.get("gopls")
+entry = registry.get("go:golang.org/x/tools/gopls")
 assert_eq("gopls", entry.lsp, "merge preserves existing lsp")
 assert_not_nil(entry.formatter, "merge adds formatter")
 

@@ -62,7 +62,7 @@ assert_not_nil(formatters["yaml"], "prettier claims yaml")
 -- Rubocop claims ruby filetype
 format._formatters = {}
 local tools_rubocop = {
-  ["rubocop"] = {},
+  ["gem:rubocop"] = {},
 }
 formatters = format.setup(tools_rubocop)
 assert_not_nil(formatters["ruby"], "rubocop claims ruby")
