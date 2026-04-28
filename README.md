@@ -172,13 +172,13 @@ Pick "dev", the server starts in a surface window. Dismiss it, keep coding. Resu
 
 ## The Registry
 
-The registry maps mise tool names to LSP server names and formatter commands.
+The registry maps mise tool names to LSP server names and formatter commands. Each tool has its own file under `lua/miser/registry/`, keyed by the exact tool name you'd write in `mise.toml`.
 
 **LSP entries** are just name mappings — miser loads the full config from the bundled nvim-lspconfig:
 
 ```lua
-["typescript-language-server"] = { lsp = "ts_ls" },
-["gopls"] = { lsp = "gopls" },
+["npm:typescript-language-server"] = { lsp = "ts_ls" },
+["go:golang.org/x/tools/gopls"] = { lsp = "gopls" },
 ```
 
 **Formatter entries** define the command and which filetypes it handles:
@@ -195,7 +195,7 @@ The registry maps mise tool names to LSP server names and formatter commands.
 Tools can have both:
 
 ```lua
-["rubocop"] = {
+["gem:rubocop"] = {
   lsp = "rubocop",
   formatter = {
     filetypes = { "ruby" },
@@ -204,18 +204,16 @@ Tools can have both:
 },
 ```
 
-Mise backend prefixes are stripped automatically — `npm:typescript-language-server` matches the registry entry for `typescript-language-server`.
-
 ### Built-in entries
 
-| Tool | LSP | Formatter |
-|------|-----|-----------|
+| mise.toml tool | LSP | Formatter |
+|----------------|-----|-----------|
 | lua-language-server | lua_ls | |
-| ruby-lsp | ruby_lsp | |
-| rubocop | rubocop | rubocop -A |
-| typescript-language-server | ts_ls | |
-| astro-language-server | astro | |
-| gopls | gopls | |
+| gem:ruby-lsp | ruby_lsp | |
+| gem:rubocop | rubocop | rubocop -A |
+| npm:typescript-language-server | ts_ls | |
+| npm:@astrojs/language-server | astro | |
+| go:golang.org/x/tools/gopls | gopls | |
 | ruff | ruff | ruff format |
 | biome | | biome format --write |
 | prettier | | prettier --write |
@@ -229,7 +227,7 @@ Mise backend prefixes are stripped automatically — `npm:typescript-language-se
 ```lua
 require("miser").setup({
   registry = {
-    ["my-lsp"] = { lsp = "my_ls" },
+    ["npm:my-lsp"] = { lsp = "my_ls" },
     ["my-formatter"] = {
       formatter = {
         filetypes = { "custom" },
@@ -242,13 +240,14 @@ require("miser").setup({
 
 ## Contributing
 
-The registry is the main contribution surface. To add support for a new tool:
+The registry is the main contribution surface. Each tool has its own file under `lua/miser/registry/`. To add support for a new tool:
 
-1. Add an entry to `lua/miser/registry.lua`
-2. For LSPs, ensure a matching config exists in nvim-lspconfig (most servers are already covered)
-3. For formatters, include `filetypes` and `cmd`
-4. Test with a `mise.toml` that declares the tool
-5. Open a PR
+1. Create a new file in `lua/miser/registry/` (e.g. `my_tool.lua`)
+2. Return a table keyed by the exact `mise.toml` tool name with `lsp` and/or `formatter` config
+3. Require the new file in `lua/miser/registry/init.lua`
+4. For LSPs, ensure a matching config exists in nvim-lspconfig (most servers are already covered)
+5. Test with a `mise.toml` that declares the tool
+6. Open a PR
 
 ## License
 
