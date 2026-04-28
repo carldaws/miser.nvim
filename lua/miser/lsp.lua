@@ -4,7 +4,8 @@ local M = {}
 
 function M.setup(tools)
   local miser_root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h:h:h")
-  local lsp_dir = miser_root .. "/deps/nvim-lspconfig/lsp"
+  local lspconfig_root = miser_root .. "/deps/nvim-lspconfig"
+  local lsp_dir = lspconfig_root .. "/lsp"
 
   if vim.fn.isdirectory(lsp_dir) == 0 then
     vim.fn.system({ "git", "-C", miser_root, "submodule", "update", "--init" })
@@ -12,6 +13,12 @@ function M.setup(tools)
       vim.notify("miser: failed to init lspconfig submodule", vim.log.levels.WARN)
       return {}
     end
+  end
+
+  -- Add lspconfig's lua/ to package path so configs can require('lspconfig.util')
+  local lua_dir = lspconfig_root .. "/lua"
+  if not package.path:find(lua_dir, 1, true) then
+    package.path = lua_dir .. "/?.lua;" .. lua_dir .. "/?/init.lua;" .. package.path
   end
 
   local enabled = {}
