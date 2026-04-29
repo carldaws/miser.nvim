@@ -22,11 +22,14 @@ function M.setup(tools)
   for tool_name, _ in pairs(tools) do
     local entry = registry.get(tool_name)
     if entry and entry.lsp then
-      local config_file = lsp_dir .. "/" .. entry.lsp .. ".lua"
-      if vim.fn.filereadable(config_file) == 1 then
-        vim.lsp.config(entry.lsp, dofile(config_file))
-        vim.lsp.enable(entry.lsp)
-        table.insert(enabled, entry.lsp)
+      local lsp_names = type(entry.lsp) == "table" and entry.lsp or { entry.lsp }
+      for _, lsp_name in ipairs(lsp_names) do
+        local config_file = lsp_dir .. "/" .. lsp_name .. ".lua"
+        if vim.fn.filereadable(config_file) == 1 then
+          vim.lsp.config(lsp_name, dofile(config_file))
+          vim.lsp.enable(lsp_name)
+          table.insert(enabled, lsp_name)
+        end
       end
     end
   end
