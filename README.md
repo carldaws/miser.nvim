@@ -238,6 +238,61 @@ require("miser").setup({
 })
 ```
 
+## Coming from Mason
+
+If you already have LSPs and formatters configured via mason.nvim and mason-lspconfig, you don't need to throw any of that away. Miser can replace Mason purely as a tool manager — just disable the automation:
+
+```lua
+require("miser").setup({
+  auto_lsp = false,
+  auto_format = false,
+})
+```
+
+This puts mise's `bin-paths` on Neovim's PATH and runs `mise install`, but doesn't touch your LSP or formatter config. Your existing lspconfig setup, conform.nvim, or whatever else you use keeps working exactly as before — the only difference is that mise manages the binaries instead of Mason.
+
+From there you can remove `mason.nvim` and `mason-lspconfig.nvim` from your plugin list and declare the same tools in `mise.toml` instead. The servers and formatters are the same binaries, just installed and versioned by mise.
+
+You can also mix and match: leave `auto_lsp = true` for tools where the defaults work and handle the rest yourself. Or override specific registry entries to change formatter commands without replacing the whole setup.
+
+## How I use mise and Neovim
+
+Mise configs are layered — global, project, and local — and `mise ls --current` resolves them all for the current directory. Miser reads that resolved list, so you can structure your mise configs to fit different situations:
+
+**Global `~/.config/mise/config.toml`** — baseline tools you want everywhere. Language servers, formatters, and runtimes that make up your default editing environment:
+
+```toml
+[tools]
+lua-language-server = "latest"
+stylua = "latest"
+node = "22"
+```
+
+**Project `mise.toml`** — committed to the repo. The team's agreed-upon tools and tasks. Everyone gets the same versions:
+
+```toml
+[tools]
+"npm:typescript-language-server" = "latest"
+biome = "1.9.4"
+
+[tasks.dev]
+run = "npm run dev"
+```
+
+**Project `mise.local.toml`** — gitignored, personal overrides. I use this in two situations:
+
+1. **Adding tools to projects that don't use mise.** I add `mise.local.toml` to my global gitignore (`~/.config/git/ignore`) so I can drop one into any project without it showing up in version control. The project doesn't need to know about mise — my tools are just available.
+
+2. **Environment variables.** When the project's `mise.toml` is committed, I keep secrets and local config in `mise.local.toml`:
+
+```toml
+[env]
+DATABASE_URL = "postgres://localhost/myapp_dev"
+SECRET_KEY_BASE = "..."
+```
+
+Miser doesn't care how you structure this — it just calls `mise ls --current` and works with whatever tools are resolved for the current directory.
+
 ## Contributing
 
 The registry is the main contribution surface. Each tool has its own file under `lua/miser/registry/`. To add support for a new tool:
