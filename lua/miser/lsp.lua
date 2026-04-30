@@ -51,7 +51,7 @@ function M.setup_format_on_save()
         vim.api.nvim_create_autocmd("BufWritePre", {
           buffer = ev.buf,
           callback = function()
-            vim.lsp.buf.format({ bufnr = ev.buf, id = client.id, timeout_ms = 1000 })
+            vim.lsp.buf.format({ bufnr = ev.buf, name = client.name, timeout_ms = 1000 })
           end,
         })
       end
