@@ -1,0 +1,5 @@
+return {
+  ["zls"] = {
+    lsp = "zls"
+  },
+}

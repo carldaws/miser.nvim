@@ -214,6 +214,7 @@ Tools can have both:
 | npm:typescript-language-server | ts_ls | |
 | npm:@astrojs/language-server | astro | |
 | go:golang.org/x/tools/gopls | gopls | |
+| zls | zls | |
 | ruff | ruff | ruff format |
 | biome | | biome format --write |
 | prettier | | prettier --write |
