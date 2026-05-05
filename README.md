@@ -93,6 +93,7 @@ No LSP config blocks. No formatter autocmds. Just declare your tools.
 | `:Miser status` | Open a status panel showing tools, LSPs, and formatters |
 | `:Miser install` | Run `mise install` and re-activate LSPs and formatters |
 | `:Miser run <task>` | Run a mise task via your configured `task_runner` |
+| `:Miser format` | Run formatter on-demand in current buffer |
 
 The status panel supports:
 - `q` / `<Esc>` to close

@@ -36,9 +36,8 @@ function M.activate(opts)
   if opts.auto_lsp then
     M._state.enabled_lsps = require("miser.lsp").setup(tools)
   end
-  if opts.auto_format then
-    M._state.formatters = require("miser.format").setup(tools)
-  end
+
+  M._state.formatters = require("miser.format").setup(tools, opts.auto_format)
 end
 
 function M.show_status()
@@ -236,15 +235,24 @@ function M.setup(opts)
       end)
     elseif subcmd == "status" then
       M.show_status()
+    elseif subcmd == "format" then
+      local bufnr = vim.api.nvim_get_current_buf()
+      if vim.bo[bufnr].modified then
+        vim.cmd("write")
+      end
+      require("miser.format").run(bufnr, { notify = true })
     else
-      vim.notify("miser: unknown command '" .. (subcmd or "") .. "'\nUsage: Miser status | run <task> | install | trust", vim.log.levels.WARN)
+      vim.notify(
+        "miser: unknown command '" .. (subcmd or "") .. "'\nUsage: Miser status | run <task> | install | trust | format",
+        vim.log.levels.WARN
+      )
     end
   end, {
     nargs = "+",
     complete = function(_, line)
       local parts = vim.split(line, "%s+")
       if #parts <= 2 then
-        return { "install", "run", "status", "trust" }
+        return { "install", "run", "status", "trust", "format" }
       end
       return {}
     end,
