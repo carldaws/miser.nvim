@@ -5,7 +5,7 @@ local M = {}
 -- Map of filetype -> formatter cmd, built once from mise tools + registry
 M._formatters = {}
 
-function M.setup(tools)
+function M.setup(tools, auto_format)
   M._formatters = {}
 
   local claimed = {}
@@ -22,7 +22,7 @@ function M.setup(tools)
     end
   end
 
-  if not vim.tbl_isempty(M._formatters) then
+  if auto_format and not vim.tbl_isempty(M._formatters) then
     M._create_autocmd()
   end
 
@@ -35,42 +35,50 @@ function M._create_autocmd()
   vim.api.nvim_create_autocmd("BufWritePost", {
     group = group,
     callback = function(ev)
-      local buf = ev.buf
-      if vim.b[buf]._miser_formatting then
-        return
-      end
-
-      local ft = vim.bo[buf].filetype
-      local cmd = M._formatters[ft]
-      if not cmd then
-        return
-      end
-
-      local filepath = vim.api.nvim_buf_get_name(buf)
-      if filepath == "" then
-        return
-      end
-
-      vim.b[buf]._miser_formatting = true
-
-      local full_cmd = vim.list_extend({}, cmd)
-      table.insert(full_cmd, filepath)
-
-      vim.system(full_cmd, { text = true }, function(result)
-        vim.schedule(function()
-          vim.b[buf]._miser_formatting = false
-          if result.code == 0 then
-            vim.cmd("checktime")
-          else
-            vim.notify(
-              "miser: format failed (" .. table.concat(cmd, " ") .. ")\n" .. (result.stderr or ""),
-              vim.log.levels.WARN
-            )
-          end
-        end)
-      end)
+      M.run(ev.buf)
     end,
   })
+end
+
+function M.run(buf, opts)
+  opts = opts or {}
+
+  if vim.b[buf]._miser_formatting then
+    return
+  end
+
+  local ft = vim.bo[buf].filetype
+  local cmd = M._formatters[ft]
+  if not cmd then
+    if opts.notify then
+      vim.notify("miser: no formatter registered for filetype '" .. ft .. "'", vim.log.levels.INFO)
+    end
+    return
+  end
+
+  local filepath = vim.api.nvim_buf_get_name(buf)
+  if filepath == "" then
+    return
+  end
+
+  vim.b[buf]._miser_formatting = true
+
+  local full_cmd = vim.list_extend({}, cmd)
+  table.insert(full_cmd, filepath)
+
+  vim.system(full_cmd, { text = true }, function(result)
+    vim.schedule(function()
+      vim.b[buf]._miser_formatting = false
+      if result.code == 0 then
+        vim.cmd("checktime")
+      else
+        vim.notify(
+          "miser: format failed (" .. table.concat(cmd, " ") .. ")\n" .. (result.stderr or ""),
+          vim.log.levels.WARN
+        )
+      end
+    end)
+  end)
 end
 
 return M
