@@ -1,5 +1,5 @@
 return {
   ["zls"] = {
-    lsp = "zls"
+    lsp = "zls",
   },
 }

@@ -45,8 +45,9 @@ function M.setup_format_on_save()
       if not client then
         return
       end
-      if not client:supports_method("textDocument/willSaveWaitUntil")
-          and client:supports_method("textDocument/formatting")
+      if
+        not client:supports_method("textDocument/willSaveWaitUntil")
+        and client:supports_method("textDocument/formatting")
       then
         vim.api.nvim_create_autocmd("BufWritePre", {
           buffer = ev.buf,
