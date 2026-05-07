@@ -223,6 +223,7 @@ Tools can have both:
 | gofumpt | | gofumpt -w |
 | black | | black |
 | shfmt | | shfmt -w |
+| npm:yaml-language-server | yamlls | |
 
 ### Extending the registry
 
