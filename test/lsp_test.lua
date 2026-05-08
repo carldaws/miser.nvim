@@ -54,6 +54,55 @@ assert_not_nil(configured["cssls"], "cssls config should be loaded from lsp list
 assert_not_nil(configured["jsonls"], "jsonls config should be loaded from lsp list")
 assert_eq(3, #enabled, "all three LSPs from list should be enabled")
 
+-- Registry entry config is deep-merged over the bundled lspconfig
+configured = {}
+enabled = {}
+registry.merge({
+  ["lua-language-server"] = {
+    config = {
+      settings = { Lua = { workspace = { library = { "/some/path" } } } },
+    },
+  },
+})
+
+result = lsp.setup({
+  ["lua-language-server"] = { { version = "3.18.0" } },
+})
+
+assert_not_nil(configured["lua_ls"], "lua_ls config should be loaded")
+assert_eq(
+  "/some/path",
+  configured["lua_ls"].settings.Lua.workspace.library[1],
+  "registry config should be merged into lsp config"
+)
+
+-- Per-LSP overrides for multi-LSP entries
+configured = {}
+enabled = {}
+registry.merge({
+  ["npm:vscode-langservers-extracted"] = {
+    lsp = { "html", "cssls", "jsonls" },
+    config = {
+      cssls = { settings = { css = { validate = false } } },
+    },
+  },
+})
+
+result = lsp.setup({
+  ["npm:vscode-langservers-extracted"] = { { version = "4.0.0" } },
+})
+
+assert_eq(
+  false,
+  configured["cssls"].settings.css.validate,
+  "per-LSP override should apply only to the named server"
+)
+assert_eq(
+  nil,
+  configured["html"].settings and configured["html"].settings.css,
+  "non-overridden server should not receive another server's settings"
+)
+
 if failures == 0 then
   print("OK: all lsp tests passed")
 else

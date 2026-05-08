@@ -182,6 +182,28 @@ The registry maps mise tool names to LSP server names and formatter commands. Ea
 ["go:golang.org/x/tools/gopls"] = { lsp = "gopls" },
 ```
 
+To override or extend a server's config, add a `config` table — it's deep-merged over the lspconfig default before `vim.lsp.config` is called:
+
+```lua
+["lua-language-server"] = {
+  lsp = "lua_ls",
+  config = {
+    settings = { Lua = { workspace = { library = { vim.env.VIMRUNTIME } } } },
+  },
+},
+```
+
+When a tool maps to multiple servers, key `config` by server name:
+
+```lua
+["npm:vscode-langservers-extracted"] = {
+  lsp = { "html", "cssls", "jsonls" },
+  config = {
+    cssls = { settings = { css = { validate = false } } },
+  },
+},
+```
+
 **Formatter entries** define the command and which filetypes it handles:
 
 ```lua

@@ -2,6 +2,16 @@ local registry = require("miser.registry")
 
 local M = {}
 
+function M._override_for(entry, lsp_name)
+  if not entry.config then
+    return nil
+  end
+  if type(entry.lsp) == "string" then
+    return entry.config
+  end
+  return entry.config[lsp_name]
+end
+
 function M.setup(tools)
   local miser_root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h:h:h")
   local lspconfig_root = miser_root .. "/deps/nvim-lspconfig"
@@ -26,7 +36,12 @@ function M.setup(tools)
       for _, lsp_name in ipairs(lsp_names) do
         local config_file = lsp_dir .. "/" .. lsp_name .. ".lua"
         if vim.fn.filereadable(config_file) == 1 then
-          vim.lsp.config(lsp_name, dofile(config_file))
+          local config = dofile(config_file)
+          local override = M._override_for(entry, lsp_name)
+          if override then
+            config = vim.tbl_deep_extend("force", config, override)
+          end
+          vim.lsp.config(lsp_name, config)
           vim.lsp.enable(lsp_name)
           table.insert(enabled, lsp_name)
         end
