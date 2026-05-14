@@ -185,13 +185,15 @@ The registry maps mise tool names to LSP server names and formatter commands. Ea
 To override or extend a server's config, add a `config` table — it's deep-merged over the lspconfig default before `vim.lsp.config` is called:
 
 ```lua
-["lua-language-server"] = {
-  lsp = "lua_ls",
+["gem:ruby-lsp"] = {
+  lsp = "ruby_lsp",
   config = {
-    settings = { Lua = { workspace = { library = { vim.env.VIMRUNTIME } } } },
+    init_options = { formatter = "standard" },
   },
 },
 ```
+
+The built-in `lua-language-server` entry already ships an `on_init` that teaches the server about the `vim` global and Neovim runtime — so editing your Neovim config "just works" out of the box. To opt out for a non-Neovim Lua project, drop a `.luarc.json` (or `.luarc.jsonc`) at the project root and miser will leave that workspace alone.
 
 When a tool maps to multiple servers, key `config` by server name:
 

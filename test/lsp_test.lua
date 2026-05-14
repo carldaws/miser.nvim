@@ -75,6 +75,10 @@ assert_eq(
   configured["lua_ls"].settings.Lua.workspace.library[1],
   "registry config should be merged into lsp config"
 )
+assert_not_nil(
+  configured["lua_ls"].on_init,
+  "lua_ls should inherit on_init from the registry default"
+)
 
 -- Per-LSP overrides for multi-LSP entries
 configured = {}
