@@ -247,6 +247,7 @@ Tools can have both:
 | gofumpt | | gofumpt -w |
 | black | | black |
 | shfmt | | shfmt -w |
+| tombi | tombi | |
 
 ### Extending the registry
 
