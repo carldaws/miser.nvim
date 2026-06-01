@@ -1,47 +1,25 @@
+local mise = require("miser.mise")
+
 local M = {}
 
-function M.list(callback)
-	vim.system({ "mise", "task", "ls", "--json" }, { text = true }, function(result)
-		if result.code ~= 0 then
-			vim.schedule(function()
-				callback({})
-			end)
-			return
-		end
-
-		local ok, tasks = pcall(vim.json.decode, result.stdout)
-		if not ok or not tasks then
-			vim.schedule(function()
-				callback({})
-			end)
-			return
-		end
-
-		vim.schedule(function()
-			callback(tasks)
-		end)
-	end)
-end
+M._task_runner = nil
 
 local function default_runner(cmd)
-	vim.cmd("botright new | resize 15")
-	vim.fn.jobstart(vim.split(cmd, " "), { term = true })
+  vim.cmd("botright new | resize 15")
+  vim.fn.jobstart(cmd, { term = true })
 end
 
-function M.run(task_name, args, opts)
-	opts = opts or {}
-	local parts = { "mise", "run", task_name }
-	if args and #args > 0 then
-		table.insert(parts, "--")
-		vim.list_extend(parts, args)
-	end
+function M.list()
+  return require("miser").state.tasks
+end
 
-	local cmd = table.concat(parts, " ")
-	local runner = opts.task_runner or M._task_runner or default_runner
-
-	vim.schedule(function()
-		runner(cmd)
-	end)
+function M.run(name, args, opts)
+  opts = opts or {}
+  local cmd = mise.task_cmd(name, args)
+  local runner = opts.task_runner or M._task_runner or default_runner
+  vim.schedule(function()
+    runner(cmd)
+  end)
 end
 
 return M

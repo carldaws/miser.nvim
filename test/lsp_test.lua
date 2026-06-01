@@ -1,23 +1,7 @@
 local lsp = require("miser.lsp")
 local registry = require("miser.registry")
+local h = require("test.helpers")
 
-local failures = 0
-
-local function assert_eq(expected, actual, msg)
-  if expected ~= actual then
-    failures = failures + 1
-    print("FAIL: " .. msg .. " (expected " .. tostring(expected) .. ", got " .. tostring(actual) .. ")")
-  end
-end
-
-local function assert_not_nil(actual, msg)
-  if actual == nil then
-    failures = failures + 1
-    print("FAIL: " .. msg .. " (expected non-nil)")
-  end
-end
-
--- Stub vim.lsp.config and vim.lsp.enable so we can run without a real LSP client
 local configured = {}
 local enabled = {}
 vim.lsp.config = function(name, config)
@@ -27,36 +11,50 @@ vim.lsp.enable = function(name)
   table.insert(enabled, name)
 end
 
--- astro.lua requires lspconfig.util — this will error if the submodule
--- lua/ directory isn't on the rtp
-local result = lsp.setup({
+local function snapshot_registry()
+  return vim.deepcopy(registry.entries)
+end
+
+local function restore_registry(snapshot)
+  registry.entries = snapshot
+end
+
+local function new_state(tools)
+  return { tools = tools, lsps = {}, formatters = {} }
+end
+
+local opts = { auto_lsp = true, auto_format = false }
+
+-- astro lsp config loads from the lspconfig submodule
+local state = new_state({
   ["npm:@astrojs/language-server"] = { { version = "2.0.0" } },
 })
+lsp.refresh(state, opts)
+h.assert_not_nil(configured["astro"], "astro config should be loaded")
+h.assert_not_nil(require("lspconfig.util"), "lspconfig.util should be requireable after refresh")
+h.assert_eq(1, #state.lsps, "state.lsps tracks enabled LSPs")
 
-assert_not_nil(configured["astro"], "astro config should be loaded")
-assert_not_nil(require("lspconfig.util"), "lspconfig.util should be requireable after setup")
-
--- List of LSPs: a single tool can map to multiple LSP servers
+-- A single tool can map to multiple LSP servers
 configured = {}
 enabled = {}
+local snapshot = snapshot_registry()
 registry.merge({
   ["npm:vscode-langservers-extracted"] = {
     lsp = { "html", "cssls", "jsonls" },
   },
 })
-
-result = lsp.setup({
-  ["npm:vscode-langservers-extracted"] = { { version = "4.0.0" } },
-})
-
-assert_not_nil(configured["html"], "html config should be loaded from lsp list")
-assert_not_nil(configured["cssls"], "cssls config should be loaded from lsp list")
-assert_not_nil(configured["jsonls"], "jsonls config should be loaded from lsp list")
-assert_eq(3, #enabled, "all three LSPs from list should be enabled")
+state = new_state({ ["npm:vscode-langservers-extracted"] = { { version = "4.0.0" } } })
+lsp.refresh(state, opts)
+h.assert_not_nil(configured["html"], "html config loaded from lsp list")
+h.assert_not_nil(configured["cssls"], "cssls config loaded from lsp list")
+h.assert_not_nil(configured["jsonls"], "jsonls config loaded from lsp list")
+h.assert_eq(3, #enabled, "all three LSPs from list are enabled")
+restore_registry(snapshot)
 
 -- Registry entry config is deep-merged over the bundled lspconfig
 configured = {}
 enabled = {}
+snapshot = snapshot_registry()
 registry.merge({
   ["lua-language-server"] = {
     config = {
@@ -64,25 +62,21 @@ registry.merge({
     },
   },
 })
-
-result = lsp.setup({
-  ["lua-language-server"] = { { version = "3.18.0" } },
-})
-
-assert_not_nil(configured["lua_ls"], "lua_ls config should be loaded")
-assert_eq(
+state = new_state({ ["lua-language-server"] = { { version = "3.18.0" } } })
+lsp.refresh(state, opts)
+h.assert_not_nil(configured["lua_ls"], "lua_ls config loaded")
+h.assert_eq(
   "/some/path",
   configured["lua_ls"].settings.Lua.workspace.library[1],
-  "registry config should be merged into lsp config"
+  "registry config merged into lsp config"
 )
-assert_not_nil(
-  configured["lua_ls"].on_init,
-  "lua_ls should inherit on_init from the registry default"
-)
+h.assert_not_nil(configured["lua_ls"].on_init, "lua_ls inherits on_init from registry default")
+restore_registry(snapshot)
 
 -- Per-LSP overrides for multi-LSP entries
 configured = {}
 enabled = {}
+snapshot = snapshot_registry()
 registry.merge({
   ["npm:vscode-langservers-extracted"] = {
     lsp = { "html", "cssls", "jsonls" },
@@ -91,25 +85,26 @@ registry.merge({
     },
   },
 })
-
-result = lsp.setup({
-  ["npm:vscode-langservers-extracted"] = { { version = "4.0.0" } },
-})
-
-assert_eq(
+state = new_state({ ["npm:vscode-langservers-extracted"] = { { version = "4.0.0" } } })
+lsp.refresh(state, opts)
+h.assert_eq(
   false,
   configured["cssls"].settings.css.validate,
-  "per-LSP override should apply only to the named server"
+  "per-LSP override applies only to the named server"
 )
-assert_eq(
+h.assert_eq(
   nil,
   configured["html"].settings and configured["html"].settings.css,
-  "non-overridden server should not receive another server's settings"
+  "non-overridden server does not receive another server's settings"
 )
+restore_registry(snapshot)
 
-if failures == 0 then
-  print("OK: all lsp tests passed")
-else
-  print(failures .. " test(s) failed")
-  vim.cmd("cquit 1")
-end
+-- auto_lsp = false skips everything
+configured = {}
+enabled = {}
+state = new_state({ ["npm:@astrojs/language-server"] = { { version = "2.0.0" } } })
+lsp.refresh(state, { auto_lsp = false, auto_format = false })
+h.assert_nil(configured["astro"], "auto_lsp=false skips configuration")
+h.assert_eq(0, #state.lsps, "state.lsps empty when auto_lsp=false")
+
+h.report("lsp")

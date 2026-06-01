@@ -20,19 +20,23 @@ function M.show(state)
     table.insert(lines, "")
   end
 
-  -- Tools: sort by source depth (project-local first, global last)
+  local function empty()
+    table.insert(lines, "  (none)")
+    hl("Comment", #lines - 1, 2)
+  end
+
+  -- Tools: project-local first, then global, then alphabetical
   heading("Tools")
   local cwd = vim.fn.getcwd()
   local sorted_tools = {}
   for tool_name, versions in pairs(state.tools) do
     local v = versions[1]
     local source_path = v and v.source and v.source.path or ""
-    local is_local = vim.startswith(source_path, cwd)
     table.insert(sorted_tools, {
       name = tool_name,
       version = v and v.version or "?",
       source = vim.fn.fnamemodify(source_path, ":~"),
-      is_local = is_local,
+      is_local = vim.startswith(source_path, cwd),
     })
   end
   table.sort(sorted_tools, function(a, b)
@@ -41,35 +45,37 @@ function M.show(state)
     end
     return a.name < b.name
   end)
-  for _, tool in ipairs(sorted_tools) do
-    local line = "  " .. tool.name .. " " .. tool.version
-    local source_col = #line + 2
-    line = line .. "  " .. tool.source
-    table.insert(lines, line)
-    hl("@variable", #lines - 1, 2, 2 + #tool.name)
-    hl("Number", #lines - 1, 3 + #tool.name, 3 + #tool.name + #tool.version)
-    hl("Comment", #lines - 1, source_col, #line)
+  if #sorted_tools == 0 then
+    empty()
+  else
+    for _, tool in ipairs(sorted_tools) do
+      local line = "  " .. tool.name .. " " .. tool.version
+      local source_col = #line + 2
+      line = line .. "  " .. tool.source
+      table.insert(lines, line)
+      hl("@variable", #lines - 1, 2, 2 + #tool.name)
+      hl("Number", #lines - 1, 3 + #tool.name, 3 + #tool.name + #tool.version)
+      hl("Comment", #lines - 1, source_col, #line)
+    end
   end
   gap()
 
-  -- LSP servers with running/enabled status
+  -- LSP servers
   heading("LSP Servers")
-  if #state.enabled_lsps > 0 then
-    for _, name in ipairs(state.enabled_lsps) do
+  if #state.lsps > 0 then
+    for _, name in ipairs(state.lsps) do
       local clients = vim.lsp.get_clients({ name = name })
       local running = #clients > 0
       local indicator = running and "● " or "○ "
-      local indicator_bytes = #indicator
       local label = running and "running" or "ready"
       local line = "  " .. indicator .. name .. "  " .. label
       table.insert(lines, line)
-      hl(running and "DiagnosticOk" or "Comment", #lines - 1, 2, 2 + indicator_bytes)
-      hl("@variable", #lines - 1, 2 + indicator_bytes, 2 + indicator_bytes + #name)
+      hl(running and "DiagnosticOk" or "Comment", #lines - 1, 2, 2 + #indicator)
+      hl("@variable", #lines - 1, 2 + #indicator, 2 + #indicator + #name)
       hl("Comment", #lines - 1, #line - #label, #line)
     end
   else
-    table.insert(lines, "  (none)")
-    hl("Comment", #lines - 1, 2)
+    empty()
   end
   gap()
 
@@ -93,8 +99,19 @@ function M.show(state)
       hl("Comment", #lines - 1, #line - #fts, #line)
     end
   else
-    table.insert(lines, "  (none)")
-    hl("Comment", #lines - 1, 2)
+    empty()
+  end
+
+  -- Conflicts: only if any
+  if #state.conflicts > 0 then
+    gap()
+    heading("Conflicts")
+    for _, c in ipairs(state.conflicts) do
+      local line = "  " .. c.filetype .. "  " .. table.concat(c.tools, ", ")
+      table.insert(lines, line)
+      hl("DiagnosticWarn", #lines - 1, 2, 2 + #c.filetype)
+      hl("Comment", #lines - 1, 2 + #c.filetype, #line)
+    end
   end
 
   local buf = vim.api.nvim_create_buf(false, true)
@@ -137,6 +154,10 @@ function M.show(state)
 
   vim.keymap.set("n", "q", "<cmd>close<CR>", { buffer = buf, nowait = true })
   vim.keymap.set("n", "<Esc>", "<cmd>close<CR>", { buffer = buf, nowait = true })
+  vim.keymap.set("n", "i", function()
+    vim.cmd("close")
+    require("miser").install()
+  end, { buffer = buf, nowait = true, desc = "mise install + refresh" })
 end
 
 return M

@@ -10,13 +10,16 @@ M.defaults = {
   task_runner = nil,
 }
 
-M._state = {
+M.state = {
   tools = {},
-  enabled_lsps = {},
+  tasks = {},
+  configs = {},
+  lsps = {},
   formatters = {},
+  conflicts = {},
 }
 
-M._opts = nil
+M.opts = nil
 
 local path_activated = false
 
@@ -31,22 +34,22 @@ local function activate_path()
   path_activated = true
 end
 
-function M.activate(opts)
+function M.activate()
   activate_path()
 
-  M._state.tools = mise.tools()
+  M.state.tools = mise.tools()
+  M.state.tasks = mise.tasks()
+  M.state.configs = mise.configs()
 
-  if opts.auto_lsp then
-    M._state.enabled_lsps = require("miser.lsp").setup(M._state.tools)
-  end
-
-  M._state.formatters = require("miser.format").setup(M._state.tools, opts.auto_format)
+  require("miser.format").refresh(M.state, M.opts)
+  require("miser.lsp").refresh(M.state, M.opts)
+  require("miser.lsp").setup_format_on_save(M.state, M.opts)
 end
 
 function M.install()
   mise.install(function(ok)
     if ok then
-      M.activate(M._opts)
+      M.activate()
     end
   end)
 end
@@ -54,45 +57,39 @@ end
 function M.trust()
   mise.trust(function(ok)
     if ok then
-      M.activate(M._opts)
+      M.activate()
     end
   end)
 end
 
 function M.format(buf, opts)
-  require("miser.format").run(buf, opts)
+  require("miser.format").run(M.state, buf, opts)
 end
 
 function M.show_status()
-  require("miser.status").show(M._state)
+  require("miser.status").show(M.state)
 end
 
 function M.setup(opts)
-  opts = vim.tbl_deep_extend("force", M.defaults, opts or {})
-  M._opts = opts
+  M.opts = vim.tbl_deep_extend("force", M.defaults, opts or {})
 
   if not mise.available() then
     vim.notify("miser: mise not found in PATH", vim.log.levels.ERROR)
     return
   end
 
-  local registry = require("miser.registry")
-  if not vim.tbl_isempty(opts.registry) then
-    registry.merge(opts.registry)
+  if not vim.tbl_isempty(M.opts.registry) then
+    require("miser.registry").merge(M.opts.registry)
   end
 
-  if opts.task_runner then
-    require("miser.tasks")._task_runner = opts.task_runner
+  if M.opts.task_runner then
+    require("miser.tasks")._task_runner = M.opts.task_runner
   end
 
-  M.activate(opts)
+  M.activate()
 
-  if opts.auto_install then
+  if M.opts.auto_install then
     M.install()
-  end
-
-  if opts.auto_lsp then
-    require("miser.lsp").setup_format_on_save()
   end
 
   require("miser.command").setup()

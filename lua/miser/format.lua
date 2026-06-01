@@ -2,45 +2,56 @@ local registry = require("miser.registry")
 
 local M = {}
 
--- Map of filetype -> formatter cmd, built once from mise tools + registry
-M._formatters = {}
+function M.refresh(state, opts)
+  state.formatters = {}
+  state.conflicts = {}
 
-function M.setup(tools, auto_format)
-  M._formatters = {}
-
-  local claimed = {}
-
-  for tool_name, _ in pairs(tools) do
+  local claims = {}
+  for tool_name in pairs(state.tools) do
     local entry = registry.get(tool_name)
     if entry and entry.formatter then
       for _, ft in ipairs(entry.formatter.filetypes) do
-        if not claimed[ft] then
-          claimed[ft] = true
-          M._formatters[ft] = entry.formatter.cmd
-        end
+        claims[ft] = claims[ft] or {}
+        table.insert(claims[ft], { tool = tool_name, cmd = entry.formatter.cmd })
       end
     end
   end
 
-  if auto_format and not vim.tbl_isempty(M._formatters) then
-    M._create_autocmd()
+  for ft, list in pairs(claims) do
+    if #list == 1 then
+      state.formatters[ft] = list[1].cmd
+    else
+      local tools = vim.tbl_map(function(c)
+        return c.tool
+      end, list)
+      table.sort(tools)
+      table.insert(state.conflicts, { filetype = ft, tools = tools })
+    end
   end
 
-  return M._formatters
-end
+  for _, c in ipairs(state.conflicts) do
+    vim.notify(
+      string.format(
+        "miser: multiple formatters claim '%s' (%s) — pick one in mise.toml",
+        c.filetype,
+        table.concat(c.tools, ", ")
+      ),
+      vim.log.levels.WARN
+    )
+  end
 
-function M._create_autocmd()
   local group = vim.api.nvim_create_augroup("miser-format", { clear = true })
-
-  vim.api.nvim_create_autocmd("BufWritePost", {
-    group = group,
-    callback = function(ev)
-      M.run(ev.buf)
-    end,
-  })
+  if opts.auto_format and not vim.tbl_isempty(state.formatters) then
+    vim.api.nvim_create_autocmd("BufWritePost", {
+      group = group,
+      callback = function(ev)
+        M.run(state, ev.buf)
+      end,
+    })
+  end
 end
 
-function M.run(buf, opts)
+function M.run(state, buf, opts)
   opts = opts or {}
 
   if vim.b[buf]._miser_formatting then
@@ -48,10 +59,10 @@ function M.run(buf, opts)
   end
 
   local ft = vim.bo[buf].filetype
-  local cmd = M._formatters[ft]
+  local cmd = state.formatters[ft]
   if not cmd then
     if opts.notify then
-      vim.notify("miser: no formatter registered for filetype '" .. ft .. "'", vim.log.levels.INFO)
+      vim.notify("miser: no formatter for filetype '" .. ft .. "'", vim.log.levels.INFO)
     end
     return
   end
