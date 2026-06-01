@@ -40,6 +40,20 @@ function M.activate(opts)
   M._state.formatters = require("miser.format").setup(tools, opts.auto_format)
 end
 
+function M.install()
+  require("miser.install").run()
+end
+
+function M.trust()
+  require("miser.trust").run(function()
+    M.activate(M._opts)
+  end)
+end
+
+function M.format(buf, opts)
+  require("miser.format").run(buf, opts)
+end
+
 function M.show_status()
   require("miser.status").show(M._state)
 end
@@ -72,47 +86,7 @@ function M.setup(opts)
     require("miser.lsp").setup_format_on_save()
   end
 
-  vim.api.nvim_create_user_command("Miser", function(cmd_opts)
-    local args = cmd_opts.fargs
-    local subcmd = args[1]
-
-    if subcmd == "run" then
-      local task_name = args[2]
-      if not task_name then
-        vim.notify("miser: usage: Miser run <task> [args...]", vim.log.levels.WARN)
-        return
-      end
-      require("miser.tasks").run(task_name, vim.list_slice(args, 3))
-    elseif subcmd == "trust" then
-      require("miser.trust").run(function()
-        M.activate(M._opts)
-      end)
-    elseif subcmd == "install" then
-      require("miser.install").run()
-    elseif subcmd == "status" then
-      M.show_status()
-    elseif subcmd == "format" then
-      local bufnr = vim.api.nvim_get_current_buf()
-      if vim.bo[bufnr].modified then
-        vim.cmd("write")
-      end
-      require("miser.format").run(bufnr, { notify = true })
-    else
-      vim.notify(
-        "miser: unknown command '" .. (subcmd or "") .. "'\nUsage: Miser status | run <task> | install | trust | format",
-        vim.log.levels.WARN
-      )
-    end
-  end, {
-    nargs = "+",
-    complete = function(_, line)
-      local parts = vim.split(line, "%s+")
-      if #parts <= 2 then
-        return { "install", "run", "status", "trust", "format" }
-      end
-      return {}
-    end,
-  })
+  require("miser.command").setup()
 end
 
 return M
