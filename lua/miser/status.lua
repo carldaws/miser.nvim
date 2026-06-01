@@ -104,24 +104,33 @@ function M.show(state)
 
   gap()
 
-  -- Tasks: only those with aliases (the ones with keymaps)
+  -- Tasks: only those with aliases (the ones with keymaps), project-local first
   heading("Tasks")
   local aliased = {}
   for _, task in ipairs(state.tasks) do
     if task.aliases and #task.aliases > 0 then
-      table.insert(aliased, task)
+      local source_path = task.source or ""
+      table.insert(aliased, {
+        name = task.name,
+        aliases = task.aliases,
+        source = vim.fn.fnamemodify(source_path, ":~"),
+        is_local = vim.startswith(source_path, cwd),
+      })
     end
   end
   if #aliased > 0 then
     table.sort(aliased, function(a, b)
+      if a.is_local ~= b.is_local then
+        return a.is_local
+      end
       return a.name < b.name
     end)
     for _, task in ipairs(aliased) do
       local aliases = table.concat(task.aliases, ", ")
-      local line = "  " .. task.name .. "  " .. aliases
+      local line = "  " .. task.name .. "  " .. aliases .. "  " .. task.source
       table.insert(lines, line)
       hl("@variable", #lines - 1, 2, 2 + #task.name)
-      hl("Comment", #lines - 1, #line - #aliases, #line)
+      hl("Comment", #lines - 1, 2 + #task.name, #line)
     end
   else
     empty()
