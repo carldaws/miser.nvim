@@ -56,7 +56,7 @@ require("miser").setup({
   auto_format = true,                                   -- format on save (registry first, LSP fallback)
   auto_lsp = true,                                      -- enable LSPs from mise tools
   registry = {},                                        -- override or extend the built-in registry
-  task_runner = nil,                                    -- function(cmd_list) -> ... (default: terminal split)
+  task_runner = nil,                                    -- function(cmd_string) -> ... (default: terminal split)
   task_keymaps = { enabled = true, prefix = "<leader>m" }, -- bind <prefix><alias> for tasks with an `alias`
 })
 ```
@@ -168,8 +168,7 @@ Miser tasks pair well with [surface.nvim](https://github.com/carldaws/surface.nv
 ```lua
 require("miser").setup({
   task_runner = function(cmd)
-    -- cmd is a list, e.g. { "mise", "run", "dev" }
-    require("surface").open(table.concat(cmd, " "), "bottom")
+    require("surface").open(cmd, "bottom")
   end,
 })
 ```

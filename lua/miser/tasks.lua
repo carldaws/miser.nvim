@@ -19,7 +19,7 @@ function M.run(name, args, opts)
   local cmd = mise.task_cmd(name, args)
   local runner = opts.task_runner or M._task_runner or default_runner
   vim.schedule(function()
-    runner(cmd)
+    runner(table.concat(cmd, " "))
   end)
 end
 
