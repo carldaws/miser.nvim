@@ -110,8 +110,10 @@ function M.show(state)
   for _, task in ipairs(state.tasks) do
     if task.aliases and #task.aliases > 0 then
       local source_path = task.source or ""
+      local description = task.description ~= "" and task.description or nil
       table.insert(aliased, {
         name = task.name,
+        label = description or task.name,
         aliases = task.aliases,
         source = vim.fn.fnamemodify(source_path, ":~"),
         is_local = vim.startswith(source_path, cwd),
@@ -127,10 +129,10 @@ function M.show(state)
     end)
     for _, task in ipairs(aliased) do
       local aliases = table.concat(task.aliases, ", ")
-      local line = "  " .. task.name .. "  " .. aliases .. "  " .. task.source
+      local line = "  " .. task.label .. "  " .. aliases .. "  " .. task.source
       table.insert(lines, line)
-      hl("@variable", #lines - 1, 2, 2 + #task.name)
-      hl("Comment", #lines - 1, 2 + #task.name, #line)
+      hl("@variable", #lines - 1, 2, 2 + #task.label)
+      hl("Comment", #lines - 1, 2 + #task.label, #line)
     end
   else
     empty()
