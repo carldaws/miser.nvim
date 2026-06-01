@@ -1,3 +1,5 @@
+local mise = require("miser.mise")
+
 local M = {}
 
 M.defaults = {
@@ -14,39 +16,46 @@ M._state = {
   formatters = {},
 }
 
-M._path_activated = false
+M._opts = nil
+
+local path_activated = false
+
+local function activate_path()
+  if path_activated then
+    return
+  end
+  local bin_paths = mise.bin_paths()
+  if #bin_paths > 0 then
+    vim.env.PATH = table.concat(bin_paths, ":") .. ":" .. vim.env.PATH
+  end
+  path_activated = true
+end
 
 function M.activate(opts)
-  if not M._path_activated then
-    local bin_paths = vim.fn.systemlist({ "mise", "bin-paths" })
-    if #bin_paths > 0 then
-      vim.env.PATH = table.concat(bin_paths, ":") .. ":" .. vim.env.PATH
-    end
-    M._path_activated = true
-  end
+  activate_path()
 
-  local json = vim.fn.system({ "mise", "ls", "--current", "--json" })
-  local ok, tools = pcall(vim.json.decode, json)
-  if not ok or not tools then
-    tools = {}
-  end
-
-  M._state.tools = tools
+  M._state.tools = mise.tools()
 
   if opts.auto_lsp then
-    M._state.enabled_lsps = require("miser.lsp").setup(tools)
+    M._state.enabled_lsps = require("miser.lsp").setup(M._state.tools)
   end
 
-  M._state.formatters = require("miser.format").setup(tools, opts.auto_format)
+  M._state.formatters = require("miser.format").setup(M._state.tools, opts.auto_format)
 end
 
 function M.install()
-  require("miser.install").run()
+  mise.install(function(ok)
+    if ok then
+      M.activate(M._opts)
+    end
+  end)
 end
 
 function M.trust()
-  require("miser.trust").run(function()
-    M.activate(M._opts)
+  mise.trust(function(ok)
+    if ok then
+      M.activate(M._opts)
+    end
   end)
 end
 
@@ -62,7 +71,7 @@ function M.setup(opts)
   opts = vim.tbl_deep_extend("force", M.defaults, opts or {})
   M._opts = opts
 
-  if vim.fn.executable("mise") == 0 then
+  if not mise.available() then
     vim.notify("miser: mise not found in PATH", vim.log.levels.ERROR)
     return
   end
@@ -79,7 +88,7 @@ function M.setup(opts)
   M.activate(opts)
 
   if opts.auto_install then
-    require("miser.install").run()
+    M.install()
   end
 
   if opts.auto_lsp then
