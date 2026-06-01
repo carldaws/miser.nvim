@@ -52,12 +52,36 @@ That's it. If your project has a `mise.toml` with tools declared, miser will con
 
 ```lua
 require("miser").setup({
-  auto_install = true,   -- run `mise install` on startup (default: true)
-  auto_format = true,    -- format on save via registry (default: true)
-  auto_lsp = true,       -- auto-configure LSPs from mise tools (default: true)
-  registry = {},         -- override or extend the built-in registry (see below)
-  task_runner = nil,     -- callback receiving a command string (default: terminal split)
+  auto_install = true,                                  -- run `mise install` on startup
+  auto_format = true,                                   -- format on save (registry first, LSP fallback)
+  auto_lsp = true,                                      -- enable LSPs from mise tools
+  registry = {},                                        -- override or extend the built-in registry
+  task_runner = nil,                                    -- function(cmd_list) -> ... (default: terminal split)
+  task_keymaps = { enabled = true, prefix = "<leader>m" }, -- bind <prefix><alias> for tasks with an `alias`
 })
+```
+
+### Format on save
+
+Both `auto_format` paths are gated by `auto_format = true`:
+
+- A registry formatter (e.g. `biome`, `prettier`, `stylua`) runs on `BufWritePost`. If two registry formatters claim the same filetype, miser refuses to pick one and emits a warning — fix `mise.toml`.
+- For a filetype with no registry formatter, an attached miser-managed LSP that supports `textDocument/formatting` will format on `BufWritePre`.
+
+The registry wins where both exist — your `mise.toml` is the source of truth.
+
+### Task keymaps
+
+Set `alias = "..."` on any task in `mise.toml` and miser will bind `<prefix><alias>` in normal mode. Tasks without an alias get no keymap.
+
+```toml
+[tasks.dev]
+run = "npm run dev"
+alias = "d"      # <leader>md runs this
+
+[tasks.test]
+run = "npm test"
+alias = "t"      # <leader>mt runs this
 ```
 
 ## Example
@@ -105,38 +129,37 @@ Run `:checkhealth miser` to verify your setup — checks for mise, the lspconfig
 
 ## Tasks
 
-Miser exposes mise tasks via a simple API — wire it up to any picker:
+For tasks that have an `alias` in `mise.toml`, miser binds `<prefix><alias>` automatically (see Task keymaps above). For everything else, the full task list lives at `require("miser.tasks").list()` (a synchronous read of cached state) — wire it up to any picker:
 
 ```lua
 -- With mini.pick
-vim.keymap.set("n", "<leader>mt", function()
-  require("miser.tasks").list(function(tasks)
-    require("mini.pick").start({
-      source = {
-        name = "Mise Tasks",
-        items = vim.tbl_map(function(t) return t.name end, tasks),
-        choose = function(chosen)
-          if chosen then require("miser.tasks").run(chosen) end
-        end,
-      },
-    })
-  end)
+vim.keymap.set("n", "<leader>mp", function()
+  local tasks = require("miser.tasks").list()
+  require("mini.pick").start({
+    source = {
+      name = "Mise Tasks",
+      items = vim.tbl_map(function(t) return t.name end, tasks),
+      choose = function(chosen)
+        if chosen then require("miser.tasks").run(chosen) end
+      end,
+    },
+  })
 end)
 ```
 
 ```lua
 -- With vim.ui.select
-vim.keymap.set("n", "<leader>mt", function()
-  require("miser.tasks").list(function(tasks)
-    vim.ui.select(tasks, {
-      prompt = "Mise Tasks:",
-      format_item = function(t) return t.name end,
-    }, function(choice)
-      if choice then require("miser.tasks").run(choice.name) end
-    end)
+vim.keymap.set("n", "<leader>mp", function()
+  vim.ui.select(require("miser.tasks").list(), {
+    prompt = "Mise Tasks:",
+    format_item = function(t) return t.name end,
+  }, function(choice)
+    if choice then require("miser.tasks").run(choice.name) end
   end)
 end)
 ```
+
+`list()` reads from miser's cached state; run `:Miser install` (or any miser command that triggers re-activation) after editing `mise.toml` to refresh.
 
 ### Pairing with surface.nvim
 
@@ -145,7 +168,8 @@ Miser tasks pair well with [surface.nvim](https://github.com/carldaws/surface.nv
 ```lua
 require("miser").setup({
   task_runner = function(cmd)
-    require("surface").open(cmd, "bottom")
+    -- cmd is a list, e.g. { "mise", "run", "dev" }
+    require("surface").open(table.concat(cmd, " "), "bottom")
   end,
 })
 ```
@@ -153,18 +177,12 @@ require("miser").setup({
 Now both `:Miser run dev` and your picker keymap route through surface:
 
 ```lua
-vim.keymap.set("n", "<leader>mt", function()
-  require("miser.tasks").list(function(tasks)
-    vim.ui.select(tasks, {
-      prompt = "Mise Tasks:",
-      format_item = function(t) return t.name end,
-    }, function(choice)
-      if choice then
-        vim.schedule(function()
-          require("miser.tasks").run(choice.name)
-        end)
-      end
-    end)
+vim.keymap.set("n", "<leader>mp", function()
+  vim.ui.select(require("miser.tasks").list(), {
+    prompt = "Mise Tasks:",
+    format_item = function(t) return t.name end,
+  }, function(choice)
+    if choice then require("miser.tasks").run(choice.name) end
   end)
 end)
 ```

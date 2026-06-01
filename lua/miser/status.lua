@@ -102,6 +102,31 @@ function M.show(state)
     empty()
   end
 
+  gap()
+
+  -- Tasks: only those with aliases (the ones with keymaps)
+  heading("Tasks")
+  local aliased = {}
+  for _, task in ipairs(state.tasks) do
+    if task.aliases and #task.aliases > 0 then
+      table.insert(aliased, task)
+    end
+  end
+  if #aliased > 0 then
+    table.sort(aliased, function(a, b)
+      return a.name < b.name
+    end)
+    for _, task in ipairs(aliased) do
+      local aliases = table.concat(task.aliases, ", ")
+      local line = "  " .. task.name .. "  " .. aliases
+      table.insert(lines, line)
+      hl("@variable", #lines - 1, 2, 2 + #task.name)
+      hl("Comment", #lines - 1, #line - #aliases, #line)
+    end
+  else
+    empty()
+  end
+
   -- Conflicts: only if any
   if #state.conflicts > 0 then
     gap()

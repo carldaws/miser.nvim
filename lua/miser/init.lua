@@ -8,6 +8,7 @@ M.defaults = {
   auto_lsp = true,
   registry = {},
   task_runner = nil,
+  task_keymaps = { enabled = true, prefix = "<leader>m" },
 }
 
 M.state = {
@@ -44,6 +45,7 @@ function M.activate()
   require("miser.format").refresh(M.state, M.opts)
   require("miser.lsp").refresh(M.state, M.opts)
   require("miser.lsp").setup_format_on_save(M.state, M.opts)
+  require("miser.tasks").refresh_keymaps(M.state, M.opts)
 end
 
 function M.install()
