@@ -8,7 +8,7 @@ No more mason, no more global installs drifting out of sync, no more hardcoding 
 
 1. On startup, miser reads your project's mise tools via `mise ls --current`
 2. Each tool is looked up in a **registry** that maps mise tool names to LSP server names and formatter commands
-3. LSP configs are loaded from the bundled [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig) and enabled via `vim.lsp.config` / `vim.lsp.enable`
+3. LSP configs come from the bundled [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig) (added to the runtimepath) and are enabled via `vim.lsp.enable` — so your own `lsp/` and `after/lsp/` files still apply on top
 4. Formatters run on save via `BufWritePost` — the project's `mise.toml` determines which formatter, not your Neovim config
 5. `mise install` runs in the background to ensure tools are up to date
 
@@ -192,14 +192,16 @@ Pick "dev", the server starts in a surface window. Dismiss it, keep coding. Resu
 
 The registry maps mise tool names to LSP server names and formatter commands. Each tool has its own file under `lua/miser/registry/`, keyed by the exact tool name you'd write in `mise.toml`.
 
-**LSP entries** are just name mappings — miser loads the full config from the bundled nvim-lspconfig:
+**LSP entries** are just name mappings — the config comes from the bundled nvim-lspconfig on the runtimepath:
 
 ```lua
 ["npm:typescript-language-server"] = { lsp = "ts_ls" },
 ["go:golang.org/x/tools/gopls"] = { lsp = "gopls" },
 ```
 
-To override or extend a server's config, add a `config` table — it's deep-merged over the lspconfig default before `vim.lsp.config` is called:
+Because miser only adds nvim-lspconfig to the runtimepath and calls `vim.lsp.enable`, your own `lsp/<server>.lua` and `after/lsp/<server>.lua` files are merged on top of the bundled default the usual way — miser won't clobber them.
+
+To override or extend a server's config from the registry, add a `config` table — it's pushed via `vim.lsp.config`, so it takes precedence over the bundled default (and over `after/lsp/`):
 
 ```lua
 ["gem:ruby-lsp"] = {

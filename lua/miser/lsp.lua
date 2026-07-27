@@ -22,7 +22,7 @@ local function ensure_lspconfig()
       return nil
     end
   end
-  vim.opt.rtp:append(lspconfig_root)
+  vim.opt.rtp:prepend(lspconfig_root)
   return lsp_dir
 end
 
@@ -46,12 +46,10 @@ function M.refresh(state, opts)
       for _, lsp_name in ipairs(lsp_names) do
         local config_file = lsp_dir .. "/" .. lsp_name .. ".lua"
         if vim.fn.filereadable(config_file) == 1 then
-          local config = dofile(config_file)
           local override = override_for(entry, lsp_name)
           if override then
-            config = vim.tbl_deep_extend("force", config, override)
+            vim.lsp.config(lsp_name, override)
           end
-          vim.lsp.config(lsp_name, config)
           vim.lsp.enable(lsp_name)
           table.insert(state.lsps, lsp_name)
         end

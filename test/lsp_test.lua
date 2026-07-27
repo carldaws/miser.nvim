@@ -25,12 +25,14 @@ end
 
 local opts = { auto_lsp = true, auto_format = false }
 
--- astro lsp config loads from the lspconfig submodule
+-- an lsp with no registry override is enabled but not force-configured, so the
+-- bundled lsp/*.lua and any user after/lsp/ resolve naturally on the rtp
 local state = new_state({
   ["npm:@astrojs/language-server"] = { { version = "2.0.0" } },
 })
 lsp.refresh(state, opts)
-h.assert_not_nil(configured["astro"], "astro config should be loaded")
+h.assert_eq(true, vim.tbl_contains(enabled, "astro"), "astro should be enabled")
+h.assert_nil(configured["astro"], "astro without an override is not force-configured")
 h.assert_not_nil(require("lspconfig.util"), "lspconfig.util should be requireable after refresh")
 h.assert_eq(1, #state.lsps, "state.lsps tracks enabled LSPs")
 
@@ -45,9 +47,9 @@ registry.merge({
 })
 state = new_state({ ["npm:vscode-langservers-extracted"] = { { version = "4.0.0" } } })
 lsp.refresh(state, opts)
-h.assert_not_nil(configured["html"], "html config loaded from lsp list")
-h.assert_not_nil(configured["cssls"], "cssls config loaded from lsp list")
-h.assert_not_nil(configured["jsonls"], "jsonls config loaded from lsp list")
+h.assert_eq(true, vim.tbl_contains(enabled, "html"), "html enabled from lsp list")
+h.assert_eq(true, vim.tbl_contains(enabled, "cssls"), "cssls enabled from lsp list")
+h.assert_eq(true, vim.tbl_contains(enabled, "jsonls"), "jsonls enabled from lsp list")
 h.assert_eq(3, #enabled, "all three LSPs from list are enabled")
 restore_registry(snapshot)
 
@@ -92,11 +94,7 @@ h.assert_eq(
   configured["cssls"].settings.css.validate,
   "per-LSP override applies only to the named server"
 )
-h.assert_eq(
-  nil,
-  configured["html"].settings and configured["html"].settings.css,
-  "non-overridden server does not receive another server's settings"
-)
+h.assert_nil(configured["html"], "non-overridden server receives no explicit config")
 restore_registry(snapshot)
 
 -- auto_lsp = false skips everything
