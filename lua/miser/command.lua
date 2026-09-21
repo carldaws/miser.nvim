@@ -35,12 +35,19 @@ function M.setup()
     end
   end, {
     nargs = "+",
-    complete = function(_, line)
+    complete = function(arg_lead, line)
       local parts = vim.split(line, "%s+")
+      local candidates = {}
       if #parts <= 2 then
-        return subcommands
+        candidates = subcommands
+      elseif parts[2] == "run" and #parts == 3 then
+        candidates = vim.tbl_map(function(task)
+          return task.name
+        end, require("miser.tasks").list())
       end
-      return {}
+      return vim.tbl_filter(function(candidate)
+        return vim.startswith(candidate, arg_lead)
+      end, candidates)
     end,
   })
 end
