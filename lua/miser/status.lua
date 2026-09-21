@@ -104,32 +104,33 @@ function M.show(state)
 
   gap()
 
-  -- Tasks: only those with aliases (the ones with keymaps), project-local first
+  -- Tasks: project-local first
   heading("Tasks")
-  local aliased = {}
+  local tasks = {}
   for _, task in ipairs(state.tasks) do
-    if task.aliases and #task.aliases > 0 then
-      local source_path = task.source or ""
-      local description = task.description ~= "" and task.description or nil
-      table.insert(aliased, {
-        name = task.name,
-        label = description or task.name,
-        aliases = task.aliases,
-        source = vim.fn.fnamemodify(source_path, ":~"),
-        is_local = vim.startswith(source_path, cwd),
-      })
-    end
+    local source_path = task.source or ""
+    local description = task.description ~= "" and task.description or nil
+    table.insert(tasks, {
+      name = task.name,
+      label = description or task.name,
+      aliases = task.aliases or {},
+      source = vim.fn.fnamemodify(source_path, ":~"),
+      is_local = vim.startswith(source_path, cwd),
+    })
   end
-  if #aliased > 0 then
-    table.sort(aliased, function(a, b)
+  if #tasks > 0 then
+    table.sort(tasks, function(a, b)
       if a.is_local ~= b.is_local then
         return a.is_local
       end
       return a.name < b.name
     end)
-    for _, task in ipairs(aliased) do
-      local aliases = table.concat(task.aliases, ", ")
-      local line = "  " .. task.label .. "  " .. aliases .. "  " .. task.source
+    for _, task in ipairs(tasks) do
+      local line = "  " .. task.label
+      if #task.aliases > 0 then
+        line = line .. "  " .. table.concat(task.aliases, ", ")
+      end
+      line = line .. "  " .. task.source
       table.insert(lines, line)
       hl("@variable", #lines - 1, 2, 2 + #task.label)
       hl("Comment", #lines - 1, 2 + #task.label, #line)
