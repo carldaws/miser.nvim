@@ -106,14 +106,21 @@ function M.show(state)
 
   -- Tasks: project-local first
   heading("Tasks")
+  local keymaps = require("miser").opts.task_keymaps
   local tasks = {}
   for _, task in ipairs(state.tasks) do
     local source_path = task.source or ""
+    local keybinds = {}
+    if keymaps.enabled then
+      for _, alias in ipairs(task.aliases or {}) do
+        table.insert(keybinds, keymaps.prefix .. alias)
+      end
+    end
     local description = task.description ~= "" and task.description or nil
     table.insert(tasks, {
       name = task.name,
       label = description or task.name,
-      aliases = task.aliases or {},
+      keybinds = keybinds,
       source = vim.fn.fnamemodify(source_path, ":~"),
       is_local = vim.startswith(source_path, cwd),
     })
@@ -127,8 +134,8 @@ function M.show(state)
     end)
     for _, task in ipairs(tasks) do
       local line = "  " .. task.label
-      if #task.aliases > 0 then
-        line = line .. "  " .. table.concat(task.aliases, ", ")
+      if #task.keybinds > 0 then
+        line = line .. "  " .. table.concat(task.keybinds, ", ")
       end
       line = line .. "  " .. task.source
       table.insert(lines, line)
