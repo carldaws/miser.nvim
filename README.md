@@ -257,6 +257,7 @@ Tools can have both:
 | gem:rubocop | rubocop | rubocop -A |
 | npm:typescript-language-server | ts_ls | |
 | npm:@astrojs/language-server | astro | |
+| npm:svelte-language-server | svelte | |
 | go:golang.org/x/tools/gopls | gopls | |
 | zls | zls | |
 | ruff | ruff | ruff format |

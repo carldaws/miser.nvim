@@ -38,6 +38,7 @@ h.assert_nil(state.formatters["javascript"], "javascript not claimed when two fo
 h.assert_nil(state.formatters["typescript"], "typescript not claimed when two formatters compete")
 h.assert_not_nil(state.formatters["html"], "prettier-only filetypes still claimed")
 h.assert_not_nil(state.formatters["yaml"], "prettier-only filetypes still claimed")
+h.assert_not_nil(state.formatters["svelte"], "prettier-only filetypes still claimed")
 
 local js_conflict
 for _, c in ipairs(state.conflicts) do

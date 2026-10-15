@@ -22,6 +22,7 @@ register(require("miser.registry.ruff"))
 register(require("miser.registry.rust_analyzer"))
 register(require("miser.registry.shfmt"))
 register(require("miser.registry.stylua"))
+register(require("miser.registry.svelte_language_server"))
 register(require("miser.registry.typescript_language_server"))
 register(require("miser.registry.zls"))
 

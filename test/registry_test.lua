@@ -35,6 +35,10 @@ entry = registry.get("npm:@astrojs/language-server")
 h.assert_not_nil(entry, "npm:@astrojs/language-server exists")
 h.assert_eq("astro", entry.lsp, "astro lsp name")
 
+entry = registry.get("npm:svelte-language-server")
+h.assert_not_nil(entry, "npm:svelte-language-server exists")
+h.assert_eq("svelte", entry.lsp, "svelte lsp name")
+
 -- Mise registry short names
 entry = registry.get("lua-language-server")
 h.assert_not_nil(entry, "lua-language-server exists")
