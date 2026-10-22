@@ -24,6 +24,10 @@ entry = registry.get("go:golang.org/x/tools/gopls")
 h.assert_not_nil(entry, "go:golang.org/x/tools/gopls exists")
 h.assert_eq("gopls", entry.lsp, "gopls lsp name")
 
+entry = registry.get("github:clangd/clangd")
+h.assert_not_nil(entry, "github:clangd/clangd exists")
+h.assert_eq("clangd", entry.lsp, "clangd lsp name")
+
 -- LSP-only entry has no formatter
 entry = registry.get("npm:typescript-language-server")
 h.assert_not_nil(entry, "npm:typescript-language-server exists")

@@ -259,6 +259,7 @@ Tools can have both:
 | npm:@astrojs/language-server | astro | |
 | npm:svelte-language-server | svelte | |
 | go:golang.org/x/tools/gopls | gopls | |
+| github:clangd/clangd | clangd | |
 | zls | zls | |
 | ruff | ruff | ruff format |
 | biome | | biome format --write |

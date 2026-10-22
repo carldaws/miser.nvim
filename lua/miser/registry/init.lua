@@ -11,6 +11,7 @@ M.entries = {}
 register(require("miser.registry.astro"))
 register(require("miser.registry.biome"))
 register(require("miser.registry.black"))
+register(require("miser.registry.clangd"))
 register(require("miser.registry.expert"))
 register(require("miser.registry.gofumpt"))
 register(require("miser.registry.gopls"))
