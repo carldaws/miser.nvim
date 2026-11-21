@@ -28,6 +28,10 @@ entry = registry.get("github:clangd/clangd")
 h.assert_not_nil(entry, "github:clangd/clangd exists")
 h.assert_eq("clangd", entry.lsp, "clangd lsp name")
 
+entry = registry.get("github:shader-slang/slang")
+h.assert_not_nil(entry, "github:shader-slang/slang exists")
+h.assert_eq("slangd", entry.lsp, "slangd lsp name")
+
 -- LSP-only entry has no formatter
 entry = registry.get("npm:typescript-language-server")
 h.assert_not_nil(entry, "npm:typescript-language-server exists")

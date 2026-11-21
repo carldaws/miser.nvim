@@ -260,6 +260,7 @@ Tools can have both:
 | npm:svelte-language-server | svelte | |
 | go:golang.org/x/tools/gopls | gopls | |
 | github:clangd/clangd | clangd | |
+| github:shader-slang/slang | slangd | |
 | zls | zls | |
 | ruff | ruff | ruff format |
 | biome | | biome format --write |
